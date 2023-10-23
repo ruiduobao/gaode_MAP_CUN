@@ -53,3 +53,25 @@ app.use((err, req, res, next) => {
     console.error(err.stack); // 打印错误堆栈到控制台
     res.status(500).send('Something went wrong! ' + err.message);
 });
+
+
+//在Express应用中提供两个新的路由来返回年份和省份的数据，然后在前端使用AJAX请求这些数据
+const fs = require('fs');
+const path = require('path');
+
+app.use('/year/:year/:province.html', (req, res) => {
+    const year = decodeURIComponent(req.params.year);
+    const province = decodeURIComponent(req.params.province);
+    res.sendFile(path.join(__dirname, 'year', year, `${province}.html`));
+});
+
+app.get('/get-years', (req, res) => {
+    const years = fs.readdirSync(path.join(__dirname, 'year'));
+    res.json(years);
+});
+
+app.get('/get-provinces/:year', (req, res) => {
+    const provinces = fs.readdirSync(path.join(__dirname, 'year', req.params.year))
+                        .map(file => file.replace('.html', ''));
+    res.json(provinces);
+});
