@@ -88,6 +88,18 @@
             zoom: 15,
             center: [<%= longitude %>, <%= latitude %>]
         });
+        // 监听iframe传来的消息并处理
+        window.addEventListener('message', async (event) => {
+        if (event.data.type === 'updateMap') {
+                const address = event.data.address;
+                const response = await fetch(`http://localhost:3000/getGeoCode?address=${encodeURIComponent(address)}`);
+                const data = await response.json();
+
+                if (data && data.latitude && data.longitude) {
+                    map.setCenter([data.longitude, data.latitude]);
+                }
+            }
+        });
 
         // 获取并填充年份
         async function loadYears() {
@@ -123,7 +135,7 @@
         loadYears().then(() => {
             loadProvinces();  // 初始加载省份
         });
-
     </script>
+
 </body>
 </html>

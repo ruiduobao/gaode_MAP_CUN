@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="X-UA-Compatible" content="ie=edge">
+<title>Markmap</title>
+<style>
+* {
+  margin: 0;
+  padding: 0;
+}
+#mindmap {
+  display: block;
+  width: 100vw;
+  height: 100vh;
+}
+</style>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/markmap-toolbar@0.15.3/dist/style.css">
+</head>
+<body>
+<svg id="mindmap"></svg>
+<script>
+  document.addEventListener('click', function(event) {
+    if (event.target && event.target.tagName === 'A') {
+        event.preventDefault(); // 阻止链接的默认行为
+        const address = event.target.innerText;
+        window.parent.postMessage({ type: 'updateMap', address: address }, '*');
+    }
+  });
+  </script>
+
+
+
+<script src="https://cdn.jsdelivr.net/npm/d3@7.8.5/dist/d3.min.js"></script><script src="https://cdn.jsdelivr.net/npm/markmap-view@0.15.3/dist/browser/index.js"></script><script src="https://cdn.jsdelivr.net/npm/markmap-toolbar@0.15.3/dist/index.js"></script><script>(r => {
+                setTimeout(r);
+              })(() => {
+  const {
+    markmap,
+    mm
+  } = window;
+  const {
+    el
+  } = markmap.Toolbar.create(mm);
+  el.setAttribute('style', 'position:absolute;bottom:20px;right:20px');
+  document.body.append(el);
+})</script><script>((getMarkmap, getOptions, root, jsonOptions) => {
+          const markmap = getMarkmap();
+          window.mm = markmap.Markmap.create('svg#mindmap', (getOptions || markmap.deriveOptions)(jsonOptions), root);
+        })(() => window.markmap,null,{"type":"heading","depth":0,"payload":{"lines":[1,2]},"content":"安徽省","children":[{"type":"heading","depth":1,"payload":{"lines":[2,3]},"content":"亳州市","children":[{"type":"list_item","depth":2,"payload":{"lines":[3,4]},"content":"利辛县","children":[{"type":"list_item","depth":3,"payload":{"lines":[4,5]},"content":"中疃镇","children":[{"type":"list_item","depth":4,"payload":{"lines":[5,6]},"content":"<a href=\"#\" onclick="sendAddressToParent('中疃镇楚桥村村民委员会'); return false;">楚桥村村民委员会(341623117215 村庄 )</a>","children":[]},{"type":"list_item","depth":4,"payload":{"lines":[6,7]},"content":"代郢村村民委员会(341623117217 村庄 )","children":[]},{"type":"list_item","depth":4,"payload":{"lines":[7,8]},"content":"高皇社区居民委员会(341623117008 村庄 )","children":[]},{"type":"list_item","depth":4,"payload":{"lines":[8,9]},"content":"后冯社区居民委员会(341623117011 村庄 )","children":[]},{"type":"list_item","depth":4,"payload":{"lines":[9,10]},"content":"黄井社区居民委员会(341623117005 村庄 )","children":[]},{"type":"list_item","depth":4,"payload":{"lines":[10,11]},"content":"黄牌坊社区居民委员会(341623117006 村庄 )","children":[]},{"type":"list_item","depth":4,"payload":{"lines":[11,12]},"content":"姜黄社区居民委员会(341623117009 村庄 )","children":[]},{"type":"list_item","depth":4,"payload":{"lines":[12,13]},"content":"狮沟社区居民委员会(341623117007 村庄 )","children":[]},{"type":"list_item","depth":4,"payload":{"lines":[13,14]},"content":"曙光村村民委员会(341623117214 村庄 )","children":[]},{"type":"list_item","depth":4,"payload":{"lines":[14,15]},"content":"武楼社区居民委员会(341623117003 村庄 )","children":[]},{"type":"list_item","depth":4,"payload":{"lines":[15,16]},"content":"谢疃社区居民委员会(341623117002 村庄 )","children":[]},{"type":"list_item","depth":4,"payload":{"lines":[16,17]},"content":"徐大村村民委员会(341623117219 村庄 )","children":[]},{"type":"list_item","depth":4,"payload":{"lines":[17,18]},"content":"张板桥社区居民委员会(341623117010 村庄 )","children":[]},{"type":"list_item","depth":4,"payload":{"lines":[18,19]},"content":"张寨村村民委员会(341623117218 村庄 )","children":[]},{"type":"list_item","depth":4,"payload":{"lines":[19,20]},"content":"镇北社区居民委员会(341623117001 镇中心区 )","children":[]},{"type":"list_item","depth":4,"payload":{"lines":[20,21]},"content":"中疃社区居民委员会(341623117004 镇中心区 )","children":[]},{"type":"list_item","depth":4,"payload":{"lines":[21,22]},"content":"周集村村民委员会(341623117200 村庄 )","children":[]}]},{"type":"list_item","depth":3,"payload":{"lines":[22,23]},"content":"利辛县工业园区","children":[{"type":"list_item","depth":4,"payload":{"lines":[23,24]},"content":"利辛县工业园区虚拟社区(341623401498 镇中心区 )","children":[]}]},{"type":"list_item","depth":3,"payload":{"lines":[24,25]},"content":"城关镇","children":[{"type":"list_item","depth":4,"payload":{"lines":[25,26]},"content":"城东村村民委员会(341623100200 镇乡结合区 )","children":[]},{"type":"list_item","depth":4,"payload":{"lines":[26,27]},"content":"城南村村民委员会(341623100202 镇乡结合区 )","children":[]}]}]}]}]},{"initialExpandLevel":1})</script>
+</body>
+</html>

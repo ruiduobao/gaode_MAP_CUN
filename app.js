@@ -75,3 +75,39 @@ app.get('/get-provinces/:year', (req, res) => {
                         .map(file => file.replace('.html', ''));
     res.json(provinces);
 });
+
+// 新增路由来处理地理编码请求
+app.get('/getGeoCode', async (req, res, next) => {
+    const placeName = req.query.address; // 从查询参数中获取地址
+
+    // 检查place参数是否有效
+    if (!placeName || placeName.trim() === '') {
+        const error = new Error('Invalid place parameter.');
+        return next(error);
+    }
+
+    const GAODE_API_KEY = 'b6ba147ffd1e49158d12f7cb16d0f381';
+    const GAODE_GEOCODE_URL = `https://restapi.amap.com/v3/geocode/geo?address=${encodeURIComponent(placeName)}&key=${GAODE_API_KEY}`;
+
+    let location = null;
+
+    try {
+        const response = await axios.get(GAODE_GEOCODE_URL);
+        if (response.data && response.data.geocodes && response.data.geocodes.length > 0) {
+            location = response.data.geocodes[0].location;
+        } else {
+            throw new Error('Unable to geocode the provided place.');
+        }
+    } catch (error) {
+        return next(error);
+    }
+
+    if (location) {
+        const [longitude, latitude] = location.split(',');
+        res.json({ latitude: latitude, longitude: longitude });
+    } else {
+        res.json({ error: `Unable to find location for ${placeName}` });
+    }
+});
+
+

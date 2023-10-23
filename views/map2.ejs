@@ -17,40 +17,78 @@
             height: 100%;
         }
         /* ... 任何其他样式都可以继续放在这里 ... */
+        /* select, button {
+        padding: 8px 15px;
+        margin: 5px;
+        border: none;
+        border-radius: 5px;
+        font-size: 1em;
+        transition: background-color 0.3s, transform 0.3s;
+    } */
+
+        /* 下拉框样式 */
+        select {
+            background-color: #f7f7f7;
+            cursor: pointer;
+        }
+
+        select:hover {
+            background-color: #e5e5e5;
+        }
+
+        select:focus {
+            outline: none;
+            background-color: #e5e5e5;
+        }
+
+        /* 按钮样式 */
+        button {
+            background-color: #3498db;
+            color: white;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #2980b9;
+        }
+
+        button:active {
+            transform: scale(0.98);
+        }
     </style>
 </head>
 <body>
-    <div id="SELECT_province" style="height: 10%;">
-        <!-- 年份下拉框 -->
-        <select id="year" onchange="loadProvinces()">
-            <!-- 年份选项将通过JavaScript动态生成 -->
-        </select>
-
-        <!-- 省份下拉框 -->
-        <select id="province">
-            <!-- 省份选项将根据所选年份通过JavaScript动态生成 -->
-        </select>
-
-        <button onclick="loadProvinceData()">查询</button>
+    <div id="MAP_title" style="background-color: lightblue; color: blue;height: 5%; text-align: center; font-weight: bold; font-size: 1.5em;">
+        五级行政区划查询
     </div>
-
-
-
     <div style="height: 90%; display: flex; width: 100%;">
         <!-- 左边的A部分 -->
-        <iframe id="provinceData" style="border: 1px solid lightblue; flex: 1;"></iframe>
+        <iframe id="provinceData" style="border: 1px solid lightblue; flex: 7;"></iframe>
         <!-- 右边的B部分 -->
-        <div id="SELECT_AND_MAP" style="flex: 1; display: flex; flex-direction: column;">
+        <div id="SELECT_AND_MAP" style="flex: 3; display: flex; flex-direction: column;">
+            <div id="SELECT_province" style="height: 10%;">
+                <!-- 年份下拉框 -->
+                <select id="year" onchange="loadProvinces()">
+                    <!-- 年份选项将通过JavaScript动态生成 -->
+                </select>
+
+                <!-- 省份下拉框 -->
+                <select id="province">
+                    <!-- 省份选项将根据所选年份通过JavaScript动态生成 -->
+                </select>
+
+                <button onclick="loadProvinceData()">查询</button>
+            </div>
             <div id="mapContainer" style="flex: 1;"></div>
         </div>
     </div>
     
-
     <script>
         const map = new AMap.Map('mapContainer', {
             zoom: 15,
             center: [<%= longitude %>, <%= latitude %>]
         });
+        
 
         // 获取并填充年份
         async function loadYears() {
@@ -71,19 +109,22 @@
             provinceSelect.innerHTML = provinces.map(province => `<option value="${province}">${province}</option>`).join('');
         }
 
-        // 当用户点击查询按钮，加载对应年份和省份的HTML文件到左侧A部分的iframe中
+        // 当用户点击查询按钮，加载对应年份和省份的HTML文件到左侧A部分的iframe中并更新标题
         function loadProvinceData() {
                 const province = document.getElementById('province').value;
                 const year = document.getElementById('year').value;
                 const iframe = document.getElementById('provinceData');
                 iframe.src = `/year/${encodeURIComponent(year)}/${encodeURIComponent(province)}.html`;
+                
+                const titleDiv = document.getElementById('MAP_title');
+                titleDiv.innerHTML = `${year}${province}五级行政区划`;
         }
 
         // 初始加载年份，并设置事件监听器
         loadYears().then(() => {
             loadProvinces();  // 初始加载省份
         });
-
     </script>
+
 </body>
 </html>

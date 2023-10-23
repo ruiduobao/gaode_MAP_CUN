@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Shanghai</title>
+</head>
+<body>
+    <a href="#" onclick="sendToParent('中疃镇楚桥村村民委员会')">中疃镇楚桥村村民委员会</a>
+    <a href="#" onclick="sendToParent('乐至县白云村民委员会')">乐至县白云村民委员会</a>
+    <!-- 这里添加 sendToParent 函数 -->
+    <script>
+        function sendToParent(address) {
+            window.parent.postMessage({ type: 'updateMap', address: address }, '*');
+        }
+    </script>
+</body>
+</html>
