@@ -110,4 +110,11 @@ app.get('/getGeoCode', async (req, res, next) => {
     }
 });
 
-
+//获取gjson数据
+app.get('/getGsonData', (req, res) => {
+    // 在这里实现你的GSON数据获取和处理逻辑
+    const gsonData = [
+        // 你的GSON数据对象
+    ];
+    res.json(gsonData);
+});

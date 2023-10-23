@@ -1,0 +1,30 @@
+<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="initial-scale=1.0, user-scalable=no, width=device-width">
+    <title>卫星图</title>
+    <style>
+        html,
+        body,
+        #container {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+        }
+    </style>
+</head>
+<body>
+<div id="container"></div>
+<script src="https://webapi.amap.com/maps?v=2.0&key=b6ba147ffd1e49158d12f7cb16d0f381"></script>
+<script>
+    var map = new AMap.Map('container', {
+        center: [116.397428, 39.90923],
+        layers: [new AMap.TileLayer.Satellite()],
+        zoom: 13
+    });
+</script>
+</body>
+</html>

@@ -55,6 +55,64 @@
         button:active {
             transform: scale(0.98);
         }
+        #provinceData {
+        border: 1px solid lightblue;
+        flex: 7;
+        overflow: auto;
+        }
+
+        #SELECT_AND_MAP {
+            flex: 3;
+            display: flex;
+            flex-direction: column;
+        }
+        /* 透明图层 */
+        #frameOverlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0,0,0,0.01);  /* 几乎透明 */
+            z-index: 1000;  /* 使其位于其他内容的上方 */
+        }
+        /* 右下角div */
+        /* 选项卡样式 */
+        #mapLayerControl {
+            display: flex;
+            margin-left: auto; /* 让其自动放置在其容器的右侧 */
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            overflow: hidden; /* 使内部按钮的border-radius有效 */
+        }
+
+        #mapLayerControl button {
+            border: none;
+            padding: 5px 15px;
+            background-color: #f7f7f7;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        #mapLayerControl button:hover {
+            background-color: #e5e5e5;
+        }
+
+        #mapLayerControl button.active {
+            background-color: #3498db;
+            color: white;
+        }
+
+        /* 年份时间的选项框 */
+        #year {
+        width: 65px; /* 这只是一个初始宽度，根据实际情况调整 */
+        }
+
+        #province {
+            width: 130px; /* 这是#year的两倍 */
+        }
+
+
     </style>
 </head>
 <body>
@@ -64,30 +122,71 @@
     <div style="height: 90%; display: flex; width: 100%;">
         <!-- 左边的A部分 -->
         <iframe id="provinceData" style="border: 1px solid lightblue; flex: 7;"></iframe>
+        <!-- 拖动条 -->
+        <div id="resizer" style="cursor: ew-resize; background-color: #ccc; width: 5px;"></div>
         <!-- 右边的B部分 -->
         <div id="SELECT_AND_MAP" style="flex: 3; display: flex; flex-direction: column;">
-            <div id="SELECT_province" style="height: 10%;">
+            <!-- 地图图层 -->
+            <div id="mapContainer" style="flex: 1;"></div>
+            <!-- 右下角 -->
+            <div id="SELECT_province" style="height: 10%; display: flex; align-items: center;">
                 <!-- 年份下拉框 -->
+                <label>时间:</label>
                 <select id="year" onchange="loadProvinces()">
                     <!-- 年份选项将通过JavaScript动态生成 -->
                 </select>
-
+            
                 <!-- 省份下拉框 -->
+                <label>省份:</label>
                 <select id="province">
                     <!-- 省份选项将根据所选年份通过JavaScript动态生成 -->
                 </select>
-
+            
                 <button onclick="loadProvinceData()">查询</button>
-            </div>
-            <div id="mapContainer" style="flex: 1;"></div>
+            
+                <!-- 地图图层切换的下拉框 -->
+                <div style="margin-left: auto;">
+                    <label for="mapLayer">底图:</label>
+                    <select id="mapLayer" onchange="switchMapLayer()">
+                        <option value="satellite" selected>遥感卫星</option>
+                        <option value="basic">基础地图</option>
+                    </select>
+                </div>
+            </div>            
         </div>
     </div>
     
     <script>
+        
+        // 定义两个地图层
+        let basicLayer = new AMap.TileLayer();
+        let satelliteLayer = new AMap.TileLayer.Satellite();
+
+        // 初始化地图
         const map = new AMap.Map('mapContainer', {
             zoom: 15,
-            center: [<%= longitude %>, <%= latitude %>]
+            center: [<%= longitude %>, <%= latitude %>],
+            layers: [satelliteLayer]  // 默认显示基础地图层
         });
+
+        function switchMapLayer() {
+            const selectedLayer = document.getElementById('mapLayer').value;
+            if (selectedLayer === 'satellite') {
+                switchToSatelliteMap();
+            } else if (selectedLayer === 'basic') {
+                switchToBasicMap();
+            }
+        }
+
+        function switchToSatelliteMap() {
+            map.setLayers([satelliteLayer]);
+        }
+
+        function switchToBasicMap() {
+            map.setLayers([basicLayer]);
+        }
+
+
         // 监听iframe传来的消息并处理
         window.addEventListener('message', async (event) => {
         if (event.data.type === 'updateMap') {
@@ -135,6 +234,72 @@
         loadYears().then(() => {
             loadProvinces();  // 初始加载省份
         });
+        //添加拖动条
+        let isResizing = false;
+        //当拖动开始时，动态地创建这个覆盖层，并在拖动结束时移除它
+        document.getElementById('resizer').addEventListener('mousedown', (event) => {
+            isResizing = true;
+            
+            // 添加iframe覆盖层
+            const overlay = document.createElement('div');
+            overlay.id = 'frameOverlay';
+            document.body.appendChild(overlay);
+            
+            // 为新创建的覆盖层添加mouseup事件监听器
+            overlay.addEventListener('mouseup', function handleMouseUp() {
+                isResizing = false;
+                overlay.removeEventListener('mouseup', handleMouseUp); // 移除这个特定的mouseup监听器
+                if (overlay) {
+                    overlay.parentElement.removeChild(overlay);
+                }
+                document.removeEventListener('mousemove', handleMouseMove);
+            });
+
+            document.addEventListener('mousemove', handleMouseMove);  
+            event.preventDefault();
+        });
+
+        overlay.addEventListener('mouseup', () => {
+            isResizing = false;
+            // 移除iframe覆盖层
+            const overlay = document.getElementById('frameOverlay');
+            if (overlay) {
+                overlay.parentElement.removeChild(overlay);
+            }
+            document.removeEventListener('mousemove', handleMouseMove);
+        });
+
+
+        document.addEventListener('mouseleave', () => {
+            isResizing = false;
+            document.removeEventListener('mousemove', handleMouseMove);
+        });
+
+        function handleMouseMove(event) {
+            // 判断拖动状态和鼠标左键是否按下
+            if (!isResizing || (event.buttons !== 1)) {
+                isResizing = false;
+                document.removeEventListener('mousemove', handleMouseMove);
+                
+                // 移除iframe覆盖层
+                const overlay = document.getElementById('frameOverlay');
+                if (overlay) {
+                    overlay.parentElement.removeChild(overlay);
+                }
+                return;
+            }
+
+            const leftPanel = document.getElementById('provinceData');
+            const container = document.querySelector("div[style='height: 90%; display: flex; width: 100%;']");
+            const resizerWidth = 5;  // 拖动条的宽度
+            let leftWidth = event.clientX - container.getBoundingClientRect().left;
+
+            // 约束leftWidth的值
+            leftWidth = Math.max(leftWidth, 100); // 最小宽度为100px
+            leftWidth = Math.min(leftWidth, container.offsetWidth - resizerWidth - 100); // 考虑到拖动条和右边面板的最小宽度
+
+            leftPanel.style.flex = `0 0 ${leftWidth}px`;
+        }
     </script>
 
 </body>

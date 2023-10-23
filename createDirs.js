@@ -9,7 +9,7 @@ function displayDirStructure(dirPath, prefix = '') {
 
         // 排除 node_modules 文件夹
         if (entry.name === 'node_modules') continue;
-
+        if (entry.name === '.git') continue;
         console.log(prefix + (i === entries.length - 1 ? '└── ' : '├── ') + entry.name);
 
         if (entry.isDirectory()) {

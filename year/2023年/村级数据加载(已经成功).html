@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="X-UA-Compatible" content="ie=edge">
+<title>Markmap</title>
+<style>
+* {
+  margin: 0;
+  padding: 0;
+}
+#mindmap {
+  display: block;
+  width: 100vw;
+  height: 100vh;
+}
+</style>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/markmap-toolbar@0.15.3/dist/style.css">
+</head>
+<body>
+<script>
+    function sendToParent(address) {
+        window.parent.postMessage({ type: 'updateMap', address: address }, '*');
+    }
+
+    // 为父元素添加事件代理
+    document.body.addEventListener('click', function(event) {
+        // 检查点击的元素是否是 <a> 元素
+        if (event.target.tagName === 'A') {
+            event.preventDefault(); // 阻止默认链接行为
+            sendToParent(event.target.getAttribute('data-address'));
+        }
+    });
+</script>
+<svg id="mindmap"></svg>
+<script src="https://cdn.jsdelivr.net/npm/d3@7.8.5/dist/d3.min.js"></script><script src="https://cdn.jsdelivr.net/npm/markmap-view@0.15.3/dist/browser/index.js"></script><script src="https://cdn.jsdelivr.net/npm/markmap-toolbar@0.15.3/dist/index.js"></script><script>(r => {
+                setTimeout(r);
+              })(() => {
+  const {
+    markmap,
+    mm
+  } = window;
+  const {
+    el
+  } = markmap.Toolbar.create(mm);
+  el.setAttribute('style', 'position:absolute;bottom:20px;right:20px');
+  document.body.append(el);
+})</script><script>((getMarkmap, getOptions, root, jsonOptions) => {
+          const markmap = getMarkmap();
+          window.mm = markmap.Markmap.create('svg#mindmap', (getOptions || markmap.deriveOptions)(jsonOptions), root);
+        })(() => window.markmap,null,{"type":"heading","depth":0,"payload":{"lines":[0,1]},"content":"安徽省","children":[{"type":"heading","depth":1,"payload":{"lines":[1,2]},"content":"亳州市","children":[{"type":"list_item","depth":2,"payload":{"lines":[2,3]},"content":"利辛县","children":[{"type":"list_item","depth":3,"payload":{"lines":[3,4]},"content":"中疃镇","children":[{"type":"list_item","depth":4,"payload":{"lines":[4,5]},"content":"<a href='#' data-address='乐至县青龙村民委员会'>楚桥村村民委员会(341623117215_村庄)</a>","children":[]}]}]}]}]},{})</script>
+<script>
+    function sendToParent(address) {
+        window.parent.postMessage({ type: 'updateMap', address: address }, '*');
+    }
+</script>
+</body>
+</html>
