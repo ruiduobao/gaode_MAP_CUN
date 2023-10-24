@@ -77,7 +77,7 @@ app.get('/get-provinces/:year', (req, res) => {
 });
 
 // 新增路由来处理地理编码请求
-app.get('/getGeoCode', async (req, res, next) => {
+app.get('/getGeoAddress', async (req, res, next) => {
     const placeName = req.query.address; // 从查询参数中获取地址
 
     // 检查place参数是否有效
@@ -96,7 +96,7 @@ app.get('/getGeoCode', async (req, res, next) => {
         if (response.data && response.data.geocodes && response.data.geocodes.length > 0) {
             location = response.data.geocodes[0].location;
         } else {
-            throw new Error('Unable to geocode the provided place.');
+            throw new Error('该地区地理编码失败');
         }
     } catch (error) {
         return next(error);
@@ -106,15 +106,46 @@ app.get('/getGeoCode', async (req, res, next) => {
         const [longitude, latitude] = location.split(',');
         res.json({ latitude: latitude, longitude: longitude });
     } else {
-        res.json({ error: `Unable to find location for ${placeName}` });
+        res.json({ error: `未发现该地区 ${placeName}` });
     }
 });
 
-//获取gjson数据
-app.get('/getGsonData', (req, res) => {
-    // 在这里实现你的GSON数据获取和处理逻辑
-    const gsonData = [
-        // 你的GSON数据对象
-    ];
-    res.json(gsonData);
+//获取矢量文件路径
+app.get('/getGsonFile', (req, res) => {
+    //日志
+    console.log('getGsonFile route called with code:', req.query.code);
+    const dataCode = req.query.code;
+    const gsonFilePath = path.join(__dirname, 'public', 'shp', `${dataCode}.gson`);
+
+    if (fs.existsSync(gsonFilePath)) {
+        const gsonData = fs.readFileSync(gsonFilePath, 'utf8');
+        res.json(JSON.parse(gsonData));
+    } else {
+        res.status(404).send('矢量未找到');
+    }
+});
+
+// 在app.js中添加新的路由来提供矢量文件的下载
+app.get('/downloadVector/:code', (req, res, next) => {
+    const dataCode = req.params.code;
+    const vectorFilePath = path.join(__dirname, 'public', 'shp', `${dataCode}.gson`);
+
+    if (fs.existsSync(vectorFilePath)) {
+        res.download(vectorFilePath);  // 使用Express的download方法
+    } else {
+        const error = new Error('矢量文件未找到');
+        return next(error);
+    }
+});
+
+//添加一个新的路由来检查矢量文件是否存在
+app.get('/checkVectorExistence', (req, res) => {
+    const dataCode = req.query.code;
+    const gsonFilePath = path.join(__dirname, 'public', 'shp', `${dataCode}.gson`);
+
+    if (fs.existsSync(gsonFilePath)) {
+        res.json({status: 200, message: "Exists"});
+    } else {
+        res.json({status: 404, message: "Not Found"});
+    }
 });

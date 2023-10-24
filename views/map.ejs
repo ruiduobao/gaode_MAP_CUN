@@ -33,9 +33,9 @@
                 <select id="province">
                     <!-- 省份选项将根据所选年份通过JavaScript动态生成 -->
                 </select>
-            
+                <!-- 下载按钮 -->
                 <button onclick="loadProvinceData()">查询</button>
-            
+                <a href="#" id="downloadVectorBtn" style="display: none;">下载矢量数据</a>
                 <!-- 地图图层切换的下拉框 -->
                 <div style="margin-left: auto;">
                     <label for="mapLayer">底图:</label>
@@ -79,16 +79,76 @@
 
         // 监听iframe传来的消息并处理
         window.addEventListener('message', async (event) => {
-        if (event.data.type === 'updateMap') {
-                const address = event.data.address;
-                const response = await fetch(`http://localhost:3000/getGeoCode?address=${encodeURIComponent(address)}`);
-                const data = await response.json();
+        console.log(event);
+        switch(event.data.type) {
+        case 'updateMapByAddress': 
+            const address = event.data.address;
+            console.log(event.data.address);
+            const response = await fetch(`http://localhost:3000/getGeoAddress?address=${encodeURIComponent(address)}`);
+            const data = await response.json();
 
-                if (data && data.latitude && data.longitude) {
-                    map.setCenter([data.longitude, data.latitude]);
-                }
+            if (data && data.latitude && data.longitude) {
+                map.setCenter([data.longitude, data.latitude]);
+            }
+            break;
+        case 'updateMapByCode':
+            const dataCode = event.data.code;
+            fetchMapDataByCode(dataCode);
+            break;
             }
         });
+        //获取对应的gjson文件
+        function fetchMapDataByCode(dataCode) {
+
+            fetch(`/getGsonFile?code=${dataCode}`)
+                .then(response => response.json())
+                .then(data => {
+                    // 使用返回的数据更新地图
+
+                    // 创建一个GeoJSON图层并将其添加到地图上
+                    const geoJsonLayer = new AMap.GeoJSON({
+                        geoJSON: data,  // 这里是从服务器返回的GeoJSON数据
+                        getPolygon: function(geojson, lnglats) {
+                            return new AMap.Polygon({
+                                path: lnglats,
+                                fillOpacity: 0.5,
+                                fillColor: '#0000FF',
+                                strokeColor: '#FF0000',
+                                strokeWeight: 2
+                            });
+                        }
+                    });
+
+                    geoJsonLayer.setMap(map);
+
+                })
+                .catch(error => {
+                    console.error('没有获取到gjson数据', error);
+                });
+            // 检查并显示下载按钮
+            checkAndShowDownloadButton(dataCode);
+            
+        }
+        //是否展示下载按钮函数
+        function checkAndShowDownloadButton(dataCode) {
+            fetch(`/checkVectorExistence?code=${dataCode}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 200) {
+                        const btn = document.getElementById('downloadVectorBtn');
+                        btn.style.display = 'block';
+                        btn.href = `/downloadVector/${dataCode}`;
+                        console.log(btn.href);
+                    }
+                })
+                .catch(error => {
+                    if (error.status === 404) {
+                        document.getElementById('downloadVectorBtn').style.display = 'none';
+                    } else {
+                        console.error('Error checking vector file:', error);
+                    }
+                });
+        }
 
         // 获取并填充年份
         async function loadYears() {
@@ -126,7 +186,7 @@
         });
         //添加拖动条
         let isResizing = false;
-        //当拖动开始时，动态地创建这个覆盖层，并在拖动结束时移除它
+        // 当拖动开始时，动态地创建这个覆盖层，并在拖动结束时移除它
         document.getElementById('resizer').addEventListener('mousedown', (event) => {
             isResizing = true;
             
@@ -145,9 +205,21 @@
                 document.removeEventListener('mousemove', handleMouseMove);
             });
 
-            document.addEventListener('mousemove', handleMouseMove);  
+            // 监听文档上的鼠标释放事件，确保释放鼠标按钮时停止拖动
+            document.addEventListener('mouseup', function stopResizing() {
+                isResizing = false;
+                document.removeEventListener('mousemove', handleMouseMove);
+                document.removeEventListener('mouseup', stopResizing);
+                if (overlay) {
+                    overlay.parentElement.removeChild(overlay);
+                }
+            });
+
+            // 监听鼠标移动事件
+            document.addEventListener('mousemove', handleMouseMove);
             event.preventDefault();
         });
+
 
         overlay.addEventListener('mouseup', () => {
             isResizing = false;
@@ -190,6 +262,7 @@
 
             leftPanel.style.flex = `0 0 ${leftWidth}px`;
         }
+        //添加JavaScript代码来检查是否存在矢量数据
     </script>
 
 </body>
