@@ -5,115 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Map Display</title>
     <script src="https://webapi.amap.com/maps?v=1.4.15&key=b6ba147ffd1e49158d12f7cb16d0f381"></script>
-    <style>
-        html, body {
-            height: 100%;
-            margin: 0;
-            padding: 0;
-        }
-
-        #mapContainer {
-            width: 100%;
-            height: 100%;
-        }
-        /* ... 任何其他样式都可以继续放在这里 ... */
-        /* select, button {
-        padding: 8px 15px;
-        margin: 5px;
-        border: none;
-        border-radius: 5px;
-        font-size: 1em;
-        transition: background-color 0.3s, transform 0.3s;
-    } */
-
-        /* 下拉框样式 */
-        select {
-            background-color: #f7f7f7;
-            cursor: pointer;
-        }
-
-        select:hover {
-            background-color: #e5e5e5;
-        }
-
-        select:focus {
-            outline: none;
-            background-color: #e5e5e5;
-        }
-
-        /* 按钮样式 */
-        button {
-            background-color: #3498db;
-            color: white;
-            cursor: pointer;
-        }
-
-        button:hover {
-            background-color: #2980b9;
-        }
-
-        button:active {
-            transform: scale(0.98);
-        }
-        #provinceData {
-        border: 1px solid lightblue;
-        flex: 7;
-        overflow: auto;
-        }
-
-        #SELECT_AND_MAP {
-            flex: 3;
-            display: flex;
-            flex-direction: column;
-        }
-        /* 透明图层 */
-        #frameOverlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-color: rgba(0,0,0,0.01);  /* 几乎透明 */
-            z-index: 1000;  /* 使其位于其他内容的上方 */
-        }
-        /* 右下角div */
-        /* 选项卡样式 */
-        #mapLayerControl {
-            display: flex;
-            margin-left: auto; /* 让其自动放置在其容器的右侧 */
-            border: 1px solid #ccc;
-            border-radius: 5px;
-            overflow: hidden; /* 使内部按钮的border-radius有效 */
-        }
-
-        #mapLayerControl button {
-            border: none;
-            padding: 5px 15px;
-            background-color: #f7f7f7;
-            cursor: pointer;
-            transition: background-color 0.3s;
-        }
-
-        #mapLayerControl button:hover {
-            background-color: #e5e5e5;
-        }
-
-        #mapLayerControl button.active {
-            background-color: #3498db;
-            color: white;
-        }
-
-        /* 年份时间的选项框 */
-        #year {
-        width: 65px; /* 这只是一个初始宽度，根据实际情况调整 */
-        }
-
-        #province {
-            width: 130px; /* 这是#year的两倍 */
-        }
-
-
-    </style>
+    <link rel="stylesheet" href="/css/styles.css">
 </head>
 <body>
     <div id="MAP_title" style="background-color: lightblue; color: blue;height: 5%; text-align: center; font-weight: bold; font-size: 1.5em;">
@@ -157,7 +49,6 @@
     </div>
     
     <script>
-        
         // 定义两个地图层
         let basicLayer = new AMap.TileLayer();
         let satelliteLayer = new AMap.TileLayer.Satellite();
@@ -185,7 +76,6 @@
         function switchToBasicMap() {
             map.setLayers([basicLayer]);
         }
-
 
         // 监听iframe传来的消息并处理
         window.addEventListener('message', async (event) => {

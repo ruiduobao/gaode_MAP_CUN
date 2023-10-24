@@ -103,6 +103,15 @@
             color: white;
         }
 
+        /* 年份时间的选项框 */
+        #year {
+        width: 65px; /* 这只是一个初始宽度，根据实际情况调整 */
+        }
+
+        #province {
+            width: 130px; /* 这是#year的两倍 */
+        }
+
 
     </style>
 </head>
@@ -117,28 +126,67 @@
         <div id="resizer" style="cursor: ew-resize; background-color: #ccc; width: 5px;"></div>
         <!-- 右边的B部分 -->
         <div id="SELECT_AND_MAP" style="flex: 3; display: flex; flex-direction: column;">
+            <!-- 地图图层 -->
             <div id="mapContainer" style="flex: 1;"></div>
-            <div id="SELECT_province" style="height: 10%;">
+            <!-- 右下角 -->
+            <div id="SELECT_province" style="height: 10%; display: flex; align-items: center;">
                 <!-- 年份下拉框 -->
+                <label>时间:</label>
                 <select id="year" onchange="loadProvinces()">
                     <!-- 年份选项将通过JavaScript动态生成 -->
                 </select>
-
+            
                 <!-- 省份下拉框 -->
+                <label>省份:</label>
                 <select id="province">
                     <!-- 省份选项将根据所选年份通过JavaScript动态生成 -->
                 </select>
-
+            
                 <button onclick="loadProvinceData()">查询</button>
-            </div>
+            
+                <!-- 地图图层切换的下拉框 -->
+                <div style="margin-left: auto;">
+                    <label for="mapLayer">底图:</label>
+                    <select id="mapLayer" onchange="switchMapLayer()">
+                        <option value="satellite" selected>遥感卫星</option>
+                        <option value="basic">基础地图</option>
+                    </select>
+                </div>
+            </div>            
         </div>
     </div>
     
     <script>
+        
+        // 定义两个地图层
+        let basicLayer = new AMap.TileLayer();
+        let satelliteLayer = new AMap.TileLayer.Satellite();
+
+        // 初始化地图
         const map = new AMap.Map('mapContainer', {
             zoom: 15,
-            center: [<%= longitude %>, <%= latitude %>]
+            center: [<%= longitude %>, <%= latitude %>],
+            layers: [satelliteLayer]  // 默认显示基础地图层
         });
+
+        function switchMapLayer() {
+            const selectedLayer = document.getElementById('mapLayer').value;
+            if (selectedLayer === 'satellite') {
+                switchToSatelliteMap();
+            } else if (selectedLayer === 'basic') {
+                switchToBasicMap();
+            }
+        }
+
+        function switchToSatelliteMap() {
+            map.setLayers([satelliteLayer]);
+        }
+
+        function switchToBasicMap() {
+            map.setLayers([basicLayer]);
+        }
+
+
         // 监听iframe传来的消息并处理
         window.addEventListener('message', async (event) => {
         if (event.data.type === 'updateMap') {
@@ -252,7 +300,6 @@
 
             leftPanel.style.flex = `0 0 ${leftWidth}px`;
         }
-
     </script>
 
 </body>
