@@ -110,7 +110,7 @@ app.get('/getGeoAddress', async (req, res, next) => {
         if (response.data && response.data.geocodes && response.data.geocodes.length > 0) {
             location = response.data.geocodes[0].location;
         } else {
-            throw new Error('该地区地理编码失败');
+            throw new Error('geo code failed');
         }
     } catch (error) {
         return next(error);
@@ -120,40 +120,56 @@ app.get('/getGeoAddress', async (req, res, next) => {
         const [longitude, latitude] = location.split(',');
         res.json({ latitude: latitude, longitude: longitude });
     } else {
-        res.json({ error: `未发现该地区 ${placeName}` });
+        res.json({ error: `not find gson ${placeName}` });
     }
 });
 
-//获取矢量文件路径
-app.get('/getGsonFile', async (req, res, next) => {
+// 从数据库中导出矢量文件到路径
+app.get('/getGsonDB', async (req, res, next) => {
     const dataCode = req.query.code;
     
     try {
-        // 首先查询数据库
         const result = await db.any('SELECT ST_AsGeoJSON(geom) as geojson_geom FROM xian_vector."CHN_xian" WHERE code = $1', [dataCode]);
         
         if (result && result.length > 0) {
             const geojson = JSON.parse(result[0].geojson_geom);
             const gsonFilePath = path.join(__dirname, 'public', 'shp', `${dataCode}.gson`);
-            
+            console.log(`vector code: ${dataCode} export to DIR.`);
             fs.writeFileSync(gsonFilePath, JSON.stringify(geojson)); // 保存geojson到文件
+
+            const relativePath = `/shp/${dataCode}.gson`;
+            res.status(200).json({ status: 'success', filepath: relativePath });
+            
         } else {
             console.log(`No vector found for code: ${dataCode} in the database.`);
+            res.status(404).json({ status: 'not_found', message: 'No vector found.' });
         }
+        
     } catch (error) {
         console.error("Error while fetching data from database:", error.message);
+        console.log("Error while fetching data from database:", error.message);
+        res.status(500).json({ status: 'error', message: 'Internal server error' });
     }
-    
-    // 下面是原有的代码
+});
+
+
+
+
+
+
+//获取矢量文件路径
+app.get('/getGsonFile', (req, res, next) => {
+    const dataCode = req.query.code;
     const gsonFilePath = path.join(__dirname, 'public', 'shp', `${dataCode}.gson`);
 
     if (fs.existsSync(gsonFilePath)) {
         const gsonData = fs.readFileSync(gsonFilePath, 'utf8');
         res.json(JSON.parse(gsonData));
     } else {
-        res.status(404).send('矢量未找到');
+        res.status(404).send('not find gson');
     }
 });
+
 
 
 // 在app.js中添加新的路由来提供矢量文件的下载
@@ -164,7 +180,7 @@ app.get('/downloadVector/:code', (req, res, next) => {
     if (fs.existsSync(vectorFilePath)) {
         res.download(vectorFilePath);  // 使用Express的download方法
     } else {
-        const error = new Error('矢量文件未找到');
+        const error = new Error('not find gson');
         return next(error);
     }
 });

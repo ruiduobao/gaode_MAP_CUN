@@ -110,7 +110,7 @@ app.get('/getGeoAddress', async (req, res, next) => {
         if (response.data && response.data.geocodes && response.data.geocodes.length > 0) {
             location = response.data.geocodes[0].location;
         } else {
-            throw new Error('该地区地理编码失败');
+            throw new Error('not find this place');
         }
     } catch (error) {
         return next(error);
@@ -120,12 +120,12 @@ app.get('/getGeoAddress', async (req, res, next) => {
         const [longitude, latitude] = location.split(',');
         res.json({ latitude: latitude, longitude: longitude });
     } else {
-        res.json({ error: `未发现该地区 ${placeName}` });
+        res.json({ error: `not find this place ${placeName}` });
     }
 });
 
-//获取矢量文件路径
-app.get('/getGsonFile', async (req, res, next) => {
+// 从数据库中导出矢量文件到路径
+app.get('/getGsonDB', async (req, res, next) => {
     const dataCode = req.query.code;
     
     try {
@@ -144,6 +144,26 @@ app.get('/getGsonFile', async (req, res, next) => {
         console.error("Error while fetching data from database:", error.message);
     }
     
+});
+
+//获取矢量文件路径
+app.get('/getGsonFile', (req, res, next) => {
+    const dataCode = req.query.code;
+    const gsonFilePath = path.join(__dirname, 'public', 'shp', `${dataCode}.gson`);
+
+    if (fs.existsSync(gsonFilePath)) {
+        const gsonData = fs.readFileSync(gsonFilePath, 'utf8');
+        res.json(JSON.parse(gsonData));
+    } else {
+        res.status(404).send('not find json');
+    }
+});
+
+
+
+//获取矢量文件路径
+app.get('/getGsonFile', (req, res, next)=> {
+    const dataCode = req.query.code;
     // 下面是原有的代码
     const gsonFilePath = path.join(__dirname, 'public', 'shp', `${dataCode}.gson`);
 
@@ -151,7 +171,7 @@ app.get('/getGsonFile', async (req, res, next) => {
         const gsonData = fs.readFileSync(gsonFilePath, 'utf8');
         res.json(JSON.parse(gsonData));
     } else {
-        res.status(404).send('矢量未找到');
+        res.status(404).send('not find json');
     }
 });
 
@@ -164,7 +184,7 @@ app.get('/downloadVector/:code', (req, res, next) => {
     if (fs.existsSync(vectorFilePath)) {
         res.download(vectorFilePath);  // 使用Express的download方法
     } else {
-        const error = new Error('矢量文件未找到');
+        const error = new Error('not find json');
         return next(error);
     }
 });
