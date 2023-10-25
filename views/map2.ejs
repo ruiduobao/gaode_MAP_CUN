@@ -33,7 +33,7 @@
                 <select id="province">
                     <!-- 省份选项将根据所选年份通过JavaScript动态生成 -->
                 </select>
-            
+                <!-- 下载按钮 -->
                 <button onclick="loadProvinceData()">查询</button>
                 <a href="#" id="downloadVectorBtn" style="display: none;">下载矢量数据</a>
                 <!-- 地图图层切换的下拉框 -->
@@ -47,8 +47,56 @@
             </div>            
         </div>
     </div>
+    <!-- 密码输入框，输入密码后才能下载数据-->
+    <div id="passwordModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center;">
+        <div style="display: flex; background-color: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); max-width: 80%;">
+            <div style="flex: 1; padding: 20px; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+                <img src="pics/gongzhonghao.jpg" alt="公众号 遥感之家" style="max-width: 100%; max-height: 100%; border-radius: 10px;" />
+                <h3>公众号 遥感之家 回复"密码"</h3>
+            </div>
+            <!-- Password Section -->
+            <div id="passwordbox" style="flex: 1; padding: 20px; display: flex; flex-direction: column; align-items: center;justify-content: center;">
+                <label>请输入密码:</label>
+                <input type="txt" id="passwordInput" style="margin-top: 10px; width: 100%;" />
+                <button onclick="checkPassword()" style="margin-top: 10px;">下载数据</button>
+            </div>
+            <!-- Image Section -->
+
+        </div>
+    </div>
     
+
     <script>
+        //添加JavaScript来监听下载链接的点击事件
+        document.getElementById('downloadVectorBtn').addEventListener('click', function(e) {
+        e.preventDefault(); // 阻止默认的下载行为
+        showPasswordModal(); // 显示模态对话框
+        });
+
+        function showPasswordModal() {
+            const modal = document.getElementById('passwordModal');
+            modal.style.display = 'flex';
+        }
+
+        function hidePasswordModal() {
+            const modal = document.getElementById('passwordModal');
+            modal.style.display = 'none';
+        }
+
+        //检查密码
+        function checkPassword() {
+        const input = document.getElementById('passwordInput');
+        if (input.value === '4444') {
+            hidePasswordModal();
+            // 此处的代码会实际开始下载
+            const downloadLink = document.getElementById('downloadVectorBtn');
+            window.location.href = downloadLink.href;
+        } else {
+            alert('密码错误。关注公众号"遥感之家"回复密码');
+        }
+        }
+
+
         // 定义两个地图层
         let basicLayer = new AMap.TileLayer();
         let satelliteLayer = new AMap.TileLayer.Satellite();
@@ -99,6 +147,7 @@
         });
         //获取对应的gjson文件
         function fetchMapDataByCode(dataCode) {
+
             fetch(`/getGsonFile?code=${dataCode}`)
                 .then(response => response.json())
                 .then(data => {
@@ -123,6 +172,29 @@
                 })
                 .catch(error => {
                     console.error('没有获取到gjson数据', error);
+                });
+            // 检查并显示下载按钮
+            checkAndShowDownloadButton(dataCode);
+            
+        }
+        //是否展示下载按钮函数
+        function checkAndShowDownloadButton(dataCode) {
+            fetch(`/checkVectorExistence?code=${dataCode}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 200) {
+                        const btn = document.getElementById('downloadVectorBtn');
+                        btn.style.display = 'block';
+                        btn.href = `/downloadVector/${dataCode}`;
+                        console.log(btn.href);
+                    }
+                })
+                .catch(error => {
+                    if (error.status === 404) {
+                        document.getElementById('downloadVectorBtn').style.display = 'none';
+                    } else {
+                        console.error('Error checking vector file:', error);
+                    }
                 });
         }
 
@@ -162,7 +234,7 @@
         });
         //添加拖动条
         let isResizing = false;
-        //当拖动开始时，动态地创建这个覆盖层，并在拖动结束时移除它
+        // 当拖动开始时，动态地创建这个覆盖层，并在拖动结束时移除它
         document.getElementById('resizer').addEventListener('mousedown', (event) => {
             isResizing = true;
             
@@ -181,9 +253,21 @@
                 document.removeEventListener('mousemove', handleMouseMove);
             });
 
-            document.addEventListener('mousemove', handleMouseMove);  
+            // 监听文档上的鼠标释放事件，确保释放鼠标按钮时停止拖动
+            document.addEventListener('mouseup', function stopResizing() {
+                isResizing = false;
+                document.removeEventListener('mousemove', handleMouseMove);
+                document.removeEventListener('mouseup', stopResizing);
+                if (overlay) {
+                    overlay.parentElement.removeChild(overlay);
+                }
+            });
+
+            // 监听鼠标移动事件
+            document.addEventListener('mousemove', handleMouseMove);
             event.preventDefault();
         });
+
 
         overlay.addEventListener('mouseup', () => {
             isResizing = false;

@@ -47,8 +47,56 @@
             </div>            
         </div>
     </div>
+    <!-- 密码输入框，输入密码后才能下载数据-->
+    <div id="passwordModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center;">
+        <div style="display: flex; background-color: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); max-width: 80%;">
+            <div style="flex: 1; padding: 20px; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+                <img src="pics/gongzhonghao.jpg" alt="公众号 遥感之家" style="max-width: 100%; max-height: 100%; border-radius: 10px;" />
+                <h3>公众号 遥感之家 回复"密码"</h3>
+            </div>
+            <!-- Password Section -->
+            <div id="passwordbox" style="flex: 1; padding: 20px; display: flex; flex-direction: column; align-items: center;justify-content: center;">
+                <label>请输入密码:</label>
+                <input type="txt" id="passwordInput" style="margin-top: 10px; width: 100%;" />
+                <button onclick="checkPassword()" style="margin-top: 10px;">下载数据</button>
+            </div>
+            <!-- Image Section -->
+
+        </div>
+    </div>
     
+
     <script>
+        //添加JavaScript来监听下载链接的点击事件
+        document.getElementById('downloadVectorBtn').addEventListener('click', function(e) {
+        e.preventDefault(); // 阻止默认的下载行为
+        showPasswordModal(); // 显示模态对话框
+        });
+
+        function showPasswordModal() {
+            const modal = document.getElementById('passwordModal');
+            modal.style.display = 'flex';
+        }
+
+        function hidePasswordModal() {
+            const modal = document.getElementById('passwordModal');
+            modal.style.display = 'none';
+        }
+
+        //检查密码
+        function checkPassword() {
+        const input = document.getElementById('passwordInput');
+        if (input.value === '4444') {
+            hidePasswordModal();
+            // 此处的代码会实际开始下载
+            const downloadLink = document.getElementById('downloadVectorBtn');
+            window.location.href = downloadLink.href;
+        } else {
+            alert('密码错误。关注公众号"遥感之家"回复密码');
+        }
+        }
+
+
         // 定义两个地图层
         let basicLayer = new AMap.TileLayer();
         let satelliteLayer = new AMap.TileLayer.Satellite();

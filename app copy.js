@@ -3,7 +3,7 @@ const axios = require('axios');
 const express = require('express');
 const app = express();
 
-//设置一个数据库属性
+//设置一个数据库连接方式
 const pgp = require('pg-promise')();
 const dbConfig = {
     host: 'localhost',
@@ -12,7 +12,6 @@ const dbConfig = {
     user: 'postgres',
     password: '12345678'
 };
-
 const db = pgp(dbConfig);
 
 
@@ -125,26 +124,10 @@ app.get('/getGeoAddress', async (req, res, next) => {
 });
 
 //获取矢量文件路径
-app.get('/getGsonFile', async (req, res, next) => {
+app.get('/getGsonFile', (req, res) => {
+    //日志
+    console.log('getGsonFile route called with code:', req.query.code);
     const dataCode = req.query.code;
-    
-    try {
-        // 首先查询数据库
-        const result = await db.any('SELECT ST_AsGeoJSON(geom) as geojson_geom FROM xian_vector."CHN_xian" WHERE code = $1', [dataCode]);
-        
-        if (result && result.length > 0) {
-            const geojson = JSON.parse(result[0].geojson_geom);
-            const gsonFilePath = path.join(__dirname, 'public', 'shp', `${dataCode}.gson`);
-            
-            fs.writeFileSync(gsonFilePath, JSON.stringify(geojson)); // 保存geojson到文件
-        } else {
-            console.log(`No vector found for code: ${dataCode} in the database.`);
-        }
-    } catch (error) {
-        console.error("Error while fetching data from database:", error.message);
-    }
-    
-    // 下面是原有的代码
     const gsonFilePath = path.join(__dirname, 'public', 'shp', `${dataCode}.gson`);
 
     if (fs.existsSync(gsonFilePath)) {
@@ -154,7 +137,6 @@ app.get('/getGsonFile', async (req, res, next) => {
         res.status(404).send('矢量未找到');
     }
 });
-
 
 // 在app.js中添加新的路由来提供矢量文件的下载
 app.get('/downloadVector/:code', (req, res, next) => {
