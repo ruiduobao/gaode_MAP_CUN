@@ -21,7 +21,7 @@
             <!-- 地图图层 -->
             <div id="mapContainer" style="flex: 1;"></div>
             <!-- 右下角 -->
-            <div id="SELECT_province" style="height: 10%; display: flex; align-items: center;">
+            <div id="SELECT_province" style="height: 20%; display: flex; align-items: center;">
                 <!-- 年份下拉框 -->
                 <label>时间:</label>
                 <select id="year" onchange="loadProvinces()">
@@ -33,9 +33,15 @@
                 <select id="province">
                     <!-- 省份选项将根据所选年份通过JavaScript动态生成 -->
                 </select>
-                <!-- 下载按钮 -->
+                <!-- 查询按钮 -->
                 <button onclick="loadProvinceData()">查询</button>
+                <!-- 下载按钮 -->
                 <a href="#" id="downloadVectorBtn" style="display: none;">下载矢量数据</a>
+                <select id="formatSelect" style="display: none;">
+                    <option value="shp">SHP</option>
+                    <option value="gson">GSON</option>
+                    <!-- <option value="svg">SVG</option> -->
+                </select>
                 <!-- 地图图层切换的下拉框 -->
                 <div style="margin-left: auto;">
                     <label for="mapLayer">底图:</label>
@@ -48,22 +54,22 @@
         </div>
     </div>
     <!-- 密码输入框，输入密码后才能下载数据-->
-    <div id="passwordModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center;">
+    <!-- <div id="passwordModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center;">
         <div style="display: flex; background-color: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); max-width: 80%;">
             <div style="flex: 1; padding: 20px; display: flex; flex-direction: column; align-items: center; justify-content: center;">
                 <img src="pics/gongzhonghao.jpg" alt="公众号 遥感之家" style="max-width: 100%; max-height: 100%; border-radius: 10px;" />
                 <h3>公众号 遥感之家 回复"密码"</h3>
-            </div>
+            </div> -->
             <!-- Password Section -->
-            <div id="passwordbox" style="flex: 1; padding: 20px; display: flex; flex-direction: column; align-items: center;justify-content: center;">
+            <!-- <div id="passwordbox" style="flex: 1; padding: 20px; display: flex; flex-direction: column; align-items: center;justify-content: center;">
                 <label>请输入密码:</label>
                 <input type="txt" id="passwordInput" style="margin-top: 10px; width: 100%;" />
                 <button onclick="checkPassword()" style="margin-top: 10px;">下载数据</button>
-            </div>
+            </div> -->
             <!-- Image Section -->
 
-        </div>
-    </div>
+        <!-- </div>
+    </div> -->
     
 
     <script>
@@ -170,82 +176,49 @@
                 });
             }
 
-            //加载矢量到高德底图中
-            function loadGeoJSONfromPath(filepath) {
-                fetch(filepath)
-                    .then(response => response.json())
-                    .then(geojsonData => {
-                        // 检查数据是否为一个简单的MultiPolygon几何对象，并转换为完整的GeoJSON对象
-                        if(geojsonData.type === "MultiPolygon") {
-                            geojsonData = {
-                                type: "FeatureCollection",
-                                features: [
-                                    {
-                                        type: "Feature",
-                                        properties: {},
-                                        geometry: geojsonData
-                                    }
-                                ]
-                            };
+        //高德显示矢量
+        function loadGeoJSONfromPath(filepath) {
+            map.clearMap();
+            fetch(filepath)
+                .then(response => response.json())
+                .then(geojsonData => {
+                    const geojson = new AMap.GeoJSON({
+                        geoJSON: geojsonData,
+                        getPolygon: function(geojson, lnglats) {
+                            return new AMap.Polygon({
+                                path: lnglats,
+                                strokeColor: '#ff33cc',
+                                fillColor: '#ffc3a0',
+                                fillOpacity: 0.5
+                            });
                         }
-
-                        const geojson = new AMap.GeoJSON({
-                            geoJSON: geojsonData,
-                            getPolygon: function(geojson, lnglats) {
-                                return new AMap.Polygon({
-                                    path: lnglats,
-                                    strokeColor: '#ff33cc',
-                                    fillColor: '#ffc3a0',
-                                    fillOpacity: 0.5
-                                });
-                            }
-                        });
-                        geojson.setMap(map);
-                        // 调整地图视野以适应GeoJSON覆盖物
-                        map.setFitView(geojson.getOverlays());
-                    })
-                    .catch(error => {
-                        console.error('Error loading GeoJSON data to the map:', error);
                     });
-            }
+                    geojson.setMap(map);
+                    
+                    // 根据GeoJSON覆盖物自动调整地图视野
+                    map.setFitView();
+
+                })
+                .catch(error => {
+                    console.error('Error loading GeoJSON data to the map:', error);
+                });
+        }
 
 
-        // //获取对应的文件夹中的gjson文件
-        // function fetchMapDataByCode(dataCode) {
-        //     fetch(`/getGsonFile?code=${dataCode}`)
-        //         .then(response => response.json())
-        //         .then(data => {
-        //             // 使用返回的数据更新地图
-
-        //             // 创建一个GeoJSON图层并将其添加到地图上
-        //             const geoJsonLayer = new AMap.GeoJSON({
-        //                 geoJSON: data,  // 这里是从服务器返回的GeoJSON数据
-        //                 getPolygon: function(geojson, lnglats) {
-        //                     return new AMap.Polygon({
-        //                         path: lnglats,
-        //                         fillOpacity: 0.5,
-        //                         fillColor: '#0000FF',
-        //                         strokeColor: '#FF0000',
-        //                         strokeWeight: 2
-        //                     });
-        //                 }
-        //             });
-
-        //             geoJsonLayer.setMap(map);
-
-        //         })
-        //         .catch(error => {
-        //             console.error('没有获取到gjson数据', error);
-        //         });
-        // }
         //是否展示下载按钮函数
         function checkAndShowDownloadButton(dataCode) {
             const btn = document.getElementById('downloadVectorBtn');
+            const formatSelect = document.getElementById('formatSelect');
             btn.style.display = 'block';
-            btn.href = `/downloadVector/${dataCode}`;
+            formatSelect.style.display = 'block';
+            
+            btn.onclick = function() {
+                const selectedFormat = formatSelect.value;
+                window.location.href = `/downloadVector/${dataCode}?format=${selectedFormat}`;
+            }
+            
             console.log(btn.href);
-        }
-
+            }
 
         // 获取并填充年份
         async function loadYears() {

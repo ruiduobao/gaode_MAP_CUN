@@ -1,0 +1,18 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          116.397428,
+          39.90923
+        ]
+      },
+      "properties": {
+        "name": "天安门广场"
+      }
+    }
+  ]
+}

@@ -1,7 +1,6 @@
 {
   "name": "gaode_map_cun",
   "version": "1.0.0",
-  "description": "",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
@@ -10,15 +9,17 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@mapbox/shp-write": "^0.4.3",
     "axios": "^1.5.1",
     "body-parser": "^1.20.2",
     "cheerio": "^1.0.0-rc.12",
+    "dbf-js": "^1.2.1",
     "ejs": "^3.1.9",
     "express": "^4.18.2",
     "fs-extra": "^11.1.1",
     "geojson": "^0.5.0",
     "pg": "^8.11.3",
-    "pg-promise": "^11.5.4",
-    "shapefile": "^0.6.6"
-  }
+    "pg-promise": "^11.5.4"
+  },
+  "description": ""
 }

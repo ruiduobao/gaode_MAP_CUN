@@ -123,44 +123,63 @@ app.get('/getGeoAddress', async (req, res, next) => {
         res.json({ error: `not find gson ${placeName}` });
     }
 });
-
+//让gson符合右手法则的库
+// const turf = require('@turf/turf');
 // 从数据库中导出矢量文件到路径
 app.get('/getGsonDB', async (req, res, next) => {
     const dataCode = req.query.code;
     
     try {
-        const result = await db.any('SELECT ST_AsGeoJSON(geom) as geojson_geom FROM xian_vector."CHN_xian" WHERE code = $1', [dataCode]);
+        // 选择几何和属性信息
+        const results = await db.any('SELECT ST_AsGeoJSON(geom) as geojson_geom, * FROM xian_vector."CHN_xian" WHERE code = $1', [dataCode]);
         
-        if (result && result.length > 0) {
-            const geojson = JSON.parse(result[0].geojson_geom);
-            const gsonFilePath = path.join(__dirname, 'public', 'shp', `${dataCode}.gson`);
-            console.log(`vector code: ${dataCode} export to DIR.`);
-            fs.writeFileSync(gsonFilePath, JSON.stringify(geojson)); // 保存geojson到文件
+        if (results && results.length > 0) {
+            const features = results.map(result => {
+                // 将几何信息转换为GeoJSON对象
+                const geojsonGeom = JSON.parse(result.geojson_geom);
+                
+                // 删除geojson_geom字段，剩下的就是属性信息
+                delete result.geojson_geom;
 
-            const relativePath = `/shp/${dataCode}.gson`;
-            res.status(200).json({ status: 'success', filepath: relativePath });
-            
+                // 创建一个完整的GeoJSON Feature对象
+                return {
+                    type: "Feature",
+                    geometry: geojsonGeom,
+                    properties: result // 将属性信息添加到Feature对象中
+                };
+            });
+
+            // 创建一个完整的GeoJSON FeatureCollection对象
+            const geojsonFeatureCollection = {
+                type: "FeatureCollection",
+                features: features
+            };
+            // 删除 geom 属性
+            geojsonFeatureCollection.features.forEach(feature => {
+                delete feature.properties.geom;
+            });
+            // 保存GeoJSON FeatureCollection到文件
+            const gsonFilePath = path.join(__dirname, 'public', 'vectordata', `${dataCode}.gson`);
+            console.log(`vector code: ${dataCode} export to DIR.`);
+            fs.writeFileSync(gsonFilePath, JSON.stringify(geojsonFeatureCollection));
+            //确保你返回的是文件的URL而不是其在服务器上的文件路径
+            const gsonFileUrl = `/vectordata/${dataCode}.gson`;
+            res.json({ status: 'success', message: 'Data exported successfully', filepath: gsonFileUrl });
+
         } else {
-            console.log(`No vector found for code: ${dataCode} in the database.`);
-            res.status(404).json({ status: 'not_found', message: 'No vector found.' });
+            res.status(404).send('Data not found');
         }
-        
-    } catch (error) {
-        console.error("Error while fetching data from database:", error.message);
-        console.log("Error while fetching data from database:", error.message);
-        res.status(500).json({ status: 'error', message: 'Internal server error' });
+    } catch (err) {
+        console.error(err);
+        res.status(500).send('Internal Server Error');
     }
 });
-
-
-
-
 
 
 //获取矢量文件路径
 app.get('/getGsonFile', (req, res, next) => {
     const dataCode = req.query.code;
-    const gsonFilePath = path.join(__dirname, 'public', 'shp', `${dataCode}.gson`);
+    const gsonFilePath = path.join(__dirname, 'public', 'vectordata', `${dataCode}.gson`);
 
     if (fs.existsSync(gsonFilePath)) {
         const gsonData = fs.readFileSync(gsonFilePath, 'utf8');
@@ -173,17 +192,82 @@ app.get('/getGsonFile', (req, res, next) => {
 
 
 // 在app.js中添加新的路由来提供矢量文件的下载
-app.get('/downloadVector/:code', (req, res, next) => {
-    const dataCode = req.params.code;
-    const vectorFilePath = path.join(__dirname, 'public', 'shp', `${dataCode}.gson`);
+//下载的路由
 
-    if (fs.existsSync(vectorFilePath)) {
-        res.download(vectorFilePath);  // 使用Express的download方法
+// const archiver = require('archiver');
+// const shp = require('shapefile');
+// const tj = require('@tmcw/togeojson');
+
+const { exec } = require('child_process');
+
+app.get('/downloadVector/:code', async (req, res, next) => {
+    const dataCode = req.params.code;
+    const format = req.query.format;
+
+    if (format === 'shp') {
+        await CovertShpFromGson(dataCode, res);
     } else {
-        const error = new Error('not find gson');
-        return next(error);
+        const vectorFilePath = path.join(__dirname, 'public', 'vectordata', `${dataCode}.${format}`);
+
+        if (fs.existsSync(vectorFilePath)) {
+            if (format === 'svg' || format === 'gson') {
+                res.download(vectorFilePath);
+            } else {
+                res.status(400).send('Invalid format');
+            }
+        } else {
+            const error = new Error('File not found');
+            return next(error);
+        }
     }
 });
+
+//转换gson数据为shp
+// const shpwrite = require('@mapbox/shp-write');
+const shpwrite =  require('./public/nodepack/shp-write/dist/index.js')
+
+async function CovertShpFromGson(dataCode, res) {
+    const outputDirectory = path.join(__dirname, 'public', 'vectordata');
+    const gsonFilePath = path.join(outputDirectory, `${dataCode}.gson`);
+    const fileBaseName = dataCode;
+
+    // 读取 GeoJSON 数据
+    let geojsonData;
+    try {
+        const gsonData = fs.readFileSync(gsonFilePath, 'utf8');
+        geojsonData = JSON.parse(gsonData);
+    } catch (err) {
+        console.error(`Error reading or parsing GeoJSON data: ${err.message}`);
+        res.status(500).send('Internal server error');
+        return;
+    }
+
+    // 转换 GeoJSON 数据为 Shapefile 格式，并保存到指定目录
+    const outputShapefilePath = path.join(outputDirectory, fileBaseName);
+
+    try {
+        const options = {
+            folder: "请关注公众号遥感之家",
+            outputType: "nodebuffer",  // 确保得到一个 Node.js Buffer 对象
+            compression: "DEFLATE",
+            // types: { polygon: 'polygon' }  // 'polygon' 是文件名前缀，不是几何类型
+        };
+
+        const zipDataBuffer = await shpwrite.zip(geojsonData, options);
+        const zipFilePath = `${outputShapefilePath}.zip`;
+
+        fs.writeFileSync(zipFilePath, zipDataBuffer);
+
+        res.download(zipFilePath);  // 提供下载
+    } catch (err) {
+        console.error(`Error converting GeoJSON to Shapefile: ${err.message}`);
+        res.status(500).send('Internal server error');
+        return;
+    }
+
+    res.download(`${outputShapefilePath}.zip`);  // 提供下载
+}
+  
 
 //添加一个新的路由来检查矢量文件是否存在
 app.get('/checkVectorExistence', (req, res) => {
@@ -196,3 +280,22 @@ app.get('/checkVectorExistence', (req, res) => {
         res.json({status: 404, message: "Not Found"});
     }
 });
+
+//添加一个定时清除器清除掉shp文件夹
+function clearShpFolder() {
+    const shpFolderPath = path.join(__dirname, 'public', 'vectordata');
+    fs.readdir(shpFolderPath, (err, files) => {
+        if (err) throw err;
+
+        for (const file of files) {
+            fs.unlink(path.join(shpFolderPath, file), err => {
+                if (err) throw err;
+            });
+        }
+        console.log('Shp folder cleared!');
+    });
+}
+
+// 设置一个每小时执行一次的定时器 setInterval(clearShpFolder, 1000 * 60 * 60);的意思是每隔1000毫秒60秒60分
+setInterval(clearShpFolder, 1000 * 60 * 60);
+
