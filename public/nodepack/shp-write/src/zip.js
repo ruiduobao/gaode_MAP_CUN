@@ -39,7 +39,7 @@ module.exports = function (
               : l.type;
           zipTarget.file(fileName + ".shp", files.shp.buffer, { binary: true });
           zipTarget.file(fileName + ".shx", files.shx.buffer, { binary: true });
-          zipTarget.file(fileName + ".dbf", files.dbf.buffer, { binary: true });
+          zipTarget.file(fileName + ".dbf", files.dbf, { binary: true });
           zipTarget.file(fileName + ".prj", prj);
         }
       );

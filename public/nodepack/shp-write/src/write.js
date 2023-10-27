@@ -1,5 +1,5 @@
 var types = require('./types');
-var dbf = require('dbf');
+var dbf = require('./dbfJS');
 var prj = require('./prj');
 var pointWriter = require('./points');
 var polyWriter = require('./poly');
