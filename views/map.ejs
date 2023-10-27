@@ -40,7 +40,7 @@
                 <select id="formatSelect" style="display: none;">
                     <option value="shp">SHP</option>
                     <option value="gson">GSON</option>
-                    <!-- <option value="svg">SVG</option> -->
+                    <option value="svg">SVG</option>
                 </select>
                 <!-- 地图图层切换的下拉框 -->
                 <div style="margin-left: auto;">
@@ -54,22 +54,21 @@
         </div>
     </div>
     <!-- 密码输入框，输入密码后才能下载数据-->
-    <!-- <div id="passwordModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center;">
+    <div id="passwordModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center;">
         <div style="display: flex; background-color: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); max-width: 80%;">
             <div style="flex: 1; padding: 20px; display: flex; flex-direction: column; align-items: center; justify-content: center;">
                 <img src="pics/gongzhonghao.jpg" alt="公众号 遥感之家" style="max-width: 100%; max-height: 100%; border-radius: 10px;" />
                 <h3>公众号 遥感之家 回复"密码"</h3>
-            </div> -->
+            </div> 
             <!-- Password Section -->
-            <!-- <div id="passwordbox" style="flex: 1; padding: 20px; display: flex; flex-direction: column; align-items: center;justify-content: center;">
+            <div id="passwordbox" style="flex: 1; padding: 20px; display: flex; flex-direction: column; align-items: center;justify-content: center;">
                 <label>请输入密码:</label>
                 <input type="txt" id="passwordInput" style="margin-top: 10px; width: 100%;" />
                 <button onclick="checkPassword()" style="margin-top: 10px;">下载数据</button>
-            </div> -->
+            </div>
             <!-- Image Section -->
-
-        <!-- </div>
-    </div> -->
+        </div>
+    </div> 
     
 
     <script>
@@ -91,15 +90,16 @@
 
         //检查密码
         function checkPassword() {
-        const input = document.getElementById('passwordInput');
-        if (input.value === '4444') {
-            hidePasswordModal();
-            // 此处的代码会实际开始下载
-            const downloadLink = document.getElementById('downloadVectorBtn');
-            window.location.href = downloadLink.href;
-        } else {
-            alert('密码错误。关注公众号"遥感之家"回复密码');
-        }
+            const input = document.getElementById('passwordInput');
+            if (input.value === '4444') {
+                hidePasswordModal();
+                // 直接设置下载URL
+                const selectedFormat = document.getElementById('formatSelect').value;
+                const dataCode = dataCode;  // 从某处获取dataCode
+                window.location.href = `/downloadVector/${dataCode}?format=${selectedFormat}`;
+            } else {
+                alert('密码错误。关注公众号"遥感之家"回复密码');
+            }
         }
 
 
@@ -212,10 +212,10 @@
             btn.style.display = 'block';
             formatSelect.style.display = 'block';
             
-            btn.onclick = function() {
-                const selectedFormat = formatSelect.value;
-                window.location.href = `/downloadVector/${dataCode}?format=${selectedFormat}`;
-            }
+            // btn.onclick = function() {
+            //     const selectedFormat = formatSelect.value;
+            //     window.location.href = `/downloadVector/${dataCode}?format=${selectedFormat}`;
+            // }
             
             console.log(btn.href);
             }

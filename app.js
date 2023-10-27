@@ -206,11 +206,13 @@ app.get('/downloadVector/:code', async (req, res, next) => {
 
     if (format === 'shp') {
         await CovertShpFromGson(dataCode, res);
+    } else if (format === 'svg') {  // 添加这个条件分支
+        await CovertSVGFromGson(dataCode, res);
     } else {
         const vectorFilePath = path.join(__dirname, 'public', 'vectordata', `${dataCode}.${format}`);
 
         if (fs.existsSync(vectorFilePath)) {
-            if (format === 'svg' || format === 'gson') {
+            if (format === 'gson') {
                 res.download(vectorFilePath);
             } else {
                 res.status(400).send('Invalid format');
@@ -267,7 +269,71 @@ async function CovertShpFromGson(dataCode, res) {
 
     res.download(`${outputShapefilePath}.zip`);  // 提供下载
 }
-  
+//进行从gson到svg图片的生成
+const { GeoJSON2SVG } = require('geojson2svg');
+// 计算 GeoJSON 数据的边界
+const geojsonExtent = require('geojson-extent');
+
+async function CovertSVGFromGson(dataCode, res) {
+    const outputDirectory = path.join(__dirname, 'public', 'vectordata');
+    const gsonFilePath = path.join(outputDirectory, `${dataCode}.gson`);
+    const fileBaseName = dataCode;
+
+    // 读取 GeoJSON 数据
+    let geojsonData;
+    try {
+        const gsonData = fs.readFileSync(gsonFilePath, 'utf8');
+        geojsonData = JSON.parse(gsonData);
+    } catch (err) {
+        console.error(`Error reading or parsing GeoJSON data: ${err.message}`);
+        res.status(500).send('Internal server error');
+        return;
+    }
+    // 计算 GeoJSON 数据的边界
+    const extent = geojsonExtent(geojsonData);
+
+    // 初始化 geojson2svg 实例，并设置一些基本参数
+    const converter = new GeoJSON2SVG({
+        mapExtent: { left: extent[0], bottom: extent[1], right: extent[2], top: extent[3] },
+        viewportSize: { width: 200, height: 100 },
+        attributes: { class: 'mapstyle', stroke: 'blue', fill: 'none', 'stroke-width': '0.3'},  // 设置线条颜色为红色，矢量内部为空心
+        r: 2,
+        output: 'svg'
+    });
+
+    // 转换 GeoJSON 数据为 SVG 字符串
+    let svgStrings;
+    try {
+        svgStrings = converter.convert(geojsonData);
+    } catch (err) {
+        console.error(`Error converting GeoJSON to SVG: ${err.message}`);
+        res.status(500).send('Internal server error');
+        return;
+    }
+
+    // 将 SVG 字符串合并为一个字符串
+    const svgStr = svgStrings.join('\n');
+
+    // 创建一个完整的 SVG 文件内容
+    const fullSvgStr = `
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 100">
+            ${svgStr}
+        </svg>
+    `;
+
+    // 保存 SVG 数据到指定目录
+    const outputSVGPath = path.join(outputDirectory, `${fileBaseName}.svg`);
+
+    try {
+        fs.writeFileSync(outputSVGPath, fullSvgStr);
+        res.download(outputSVGPath);  // 提供下载
+    } catch (err) {
+        console.error(`Error writing SVG file: ${err.message}`);
+        res.status(500).send('Internal server error');
+        return;
+    }
+}
+
 
 //添加一个新的路由来检查矢量文件是否存在
 app.get('/checkVectorExistence', (req, res) => {

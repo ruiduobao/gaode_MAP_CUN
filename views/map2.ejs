@@ -1,56 +1,290 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta http-equiv="X-UA-Compatible" content="IE=edge">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>GeoJSON to Shapefile</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Map Display</title>
+    <script src="https://webapi.amap.com/maps?v=1.4.15&key=b6ba147ffd1e49158d12f7cb16d0f381"></script>
+    <link rel="stylesheet" href="/css/styles.css">
 </head>
 <body>
-    <div id="error-message" style="color: red;"></div>
-
-    <% if (errorMessage) { %>
-        <div style="color: red;">
-          <strong>Error:</strong> <%= errorMessage %>
+    <div id="MAP_title" style="background-color: lightblue; color: blue;height: 5%; text-align: center; font-weight: bold; font-size: 1.5em;">
+        五级行政区划查询
+    </div>
+    <div style="height: 90%; display: flex; width: 100%;">
+        <!-- 左边的A部分 -->
+        <iframe id="provinceData" style="border: 1px solid lightblue; flex: 7;"></iframe>
+        <!-- 拖动条 -->
+        <div id="resizer" style="cursor: ew-resize; background-color: #ccc; width: 5px;"></div>
+        <!-- 右边的B部分 -->
+        <div id="SELECT_AND_MAP" style="flex: 3; display: flex; flex-direction: column;">
+            <!-- 地图图层 -->
+            <div id="mapContainer" style="flex: 1;"></div>
+            <!-- 右下角 -->
+            <div id="SELECT_province" style="height: 20%; display: flex; align-items: center;">
+                <!-- 年份下拉框 -->
+                <label>时间:</label>
+                <select id="year" onchange="loadProvinces()">
+                    <!-- 年份选项将通过JavaScript动态生成 -->
+                </select>
+            
+                <!-- 省份下拉框 -->
+                <label>省份:</label>
+                <select id="province">
+                    <!-- 省份选项将根据所选年份通过JavaScript动态生成 -->
+                </select>
+                <!-- 查询按钮 -->
+                <button onclick="loadProvinceData()">查询</button>
+                <!-- 下载按钮 -->
+                <a href="#" id="downloadVectorBtn" style="display: none;">下载矢量数据</a>
+                <select id="formatSelect" style="display: none;">
+                    <option value="shp">SHP</option>
+                    <option value="gson">GSON</option>
+                    <option value="svg">SVG</option>
+                </select>
+                <!-- 地图图层切换的下拉框 -->
+                <div style="margin-left: auto;">
+                    <label for="mapLayer">底图:</label>
+                    <select id="mapLayer" onchange="switchMapLayer()">
+                        <option value="satellite" selected>遥感卫星</option>
+                        <option value="basic">基础地图</option>
+                    </select>
+                </div>
+            </div>            
         </div>
-      <% } %>
-  <h1>GeoJSON to Shapefile Converter</h1>
-  <form action="/convert" method="POST">
-    <textarea name="geojson" rows="10" cols="30"></textarea><br>
-    <button type="button" onclick="convert(event)">Convert</button>
+    </div>
+    <script>
+        // 定义两个地图层
+        let basicLayer = new AMap.TileLayer();
+        let satelliteLayer = new AMap.TileLayer.Satellite();
 
-  </form>
-  <script>
-  function convert(event) {
-    // 阻止表单的默认提交行为
-    event.preventDefault();
+        // 初始化地图
+        const map = new AMap.Map('mapContainer', {
+            zoom: 15,
+            center: [<%= longitude %>, <%= latitude %>],
+            layers: [satelliteLayer]  // 默认显示基础地图层
+        });
 
-    // 获取textarea中的内容
-    const geojson = document.querySelector('textarea[name="geojson"]').value;
+        function switchMapLayer() {
+            const selectedLayer = document.getElementById('mapLayer').value;
+            if (selectedLayer === 'satellite') {
+                switchToSatelliteMap();
+            } else if (selectedLayer === 'basic') {
+                switchToBasicMap();
+            }
+        }
 
-    // 创建一个 FormData 对象，并添加 geojson 数据
-    const formData = new FormData();
-    formData.append('geojson', geojson);
+        function switchToSatelliteMap() {
+            map.setLayers([satelliteLayer]);
+        }
 
-    // 发送一个异步请求到服务器
-    const xhr = new XMLHttpRequest();
-    xhr.open('POST', '/convert', true);
-    xhr.onload = function () {
-      if (xhr.status >= 200 && xhr.status < 300) {
-        // 请求成功，处理响应
-        console.log('Success:', xhr.responseText);
-      } else {
-        // 请求失败，显示错误信息
-        document.getElementById('error-message').innerText = xhr.responseText;
-      }
-    };
-    xhr.onerror = function () {
-      // 网络错误，显示错误信息
-      document.getElementById('error-message').innerText = 'Network error';
-    };
-    xhr.send(formData);
-  }
+        function switchToBasicMap() {
+            map.setLayers([basicLayer]);
+        }
+
+        // 监听iframe传来的消息并处理
+        window.addEventListener('message', async (event) => {
+        console.log(event);
+        switch(event.data.type) {
+        case 'updateMapByAddress': 
+            const address = event.data.address;
+            console.log(event.data.address);
+            const response = await fetch(`http://localhost:3000/getGeoAddress?address=${encodeURIComponent(address)}`);
+            const data = await response.json();
+
+            if (data && data.latitude && data.longitude) {
+                map.setCenter([data.longitude, data.latitude]);
+            }
+            break;
+        case 'updateMapByCode':
+            const dataCode = event.data.code;
+            exportgsontoDIR(dataCode)
+                .then(() => {
+                    console.log('Successfully completed exportgsontoDIR!'); // 打印 exportgsontoDIR 完成状态
+                })
+                .catch(error => {
+                    console.log('exportgsontoDIR! failed'); // 打印 exportgsontoDIR 完成状态
+                    console.error('Error in the sequence:', error);
+                });
+            break;
+            }
+        });
+
+        //将数据库中查询到的矢量导出到文件夹中
+        function exportgsontoDIR(dataCode) {
+            return fetch(`/getGsonDB?code=${dataCode}`)
+                .then(response => response.json())
+                .then(data => {
+                    console.log('Data exported successfully:', data);
+                    if(data.status === 'success') {
+                        checkAndShowDownloadButton(dataCode);
+                        loadGeoJSONfromPath(data.filepath);  // 使用返回的路径来加载GeoJSON
+                    }
+                })
+                .catch(error => {
+                    console.error('Error exporting gjson data:', error);
+                    throw error;
+                });
+            }
+
+        //高德显示矢量
+        function loadGeoJSONfromPath(filepath) {
+            map.clearMap();
+            fetch(filepath)
+                .then(response => response.json())
+                .then(geojsonData => {
+                    const geojson = new AMap.GeoJSON({
+                        geoJSON: geojsonData,
+                        getPolygon: function(geojson, lnglats) {
+                            return new AMap.Polygon({
+                                path: lnglats,
+                                strokeColor: '#ff33cc',
+                                fillColor: '#ffc3a0',
+                                fillOpacity: 0.5
+                            });
+                        }
+                    });
+                    geojson.setMap(map);
+                    
+                    // 根据GeoJSON覆盖物自动调整地图视野
+                    map.setFitView();
+
+                })
+                .catch(error => {
+                    console.error('Error loading GeoJSON data to the map:', error);
+                });
+        }
+
+
+        //是否展示下载按钮函数
+        function checkAndShowDownloadButton(dataCode) {
+            const btn = document.getElementById('downloadVectorBtn');
+            const formatSelect = document.getElementById('formatSelect');
+            btn.style.display = 'block';
+            formatSelect.style.display = 'block';
+            
+            // btn.onclick = function() {
+            //     const selectedFormat = formatSelect.value;
+            //     window.location.href = `/downloadVector/${dataCode}?format=${selectedFormat}`;
+            // }
+            
+            console.log(btn.href);
+            }
+
+        // 获取并填充年份
+        async function loadYears() {
+            const response = await fetch('/get-years');
+            const years = await response.json();
+            const yearSelect = document.getElementById('year');
+            
+            yearSelect.innerHTML = years.map(year => `<option value="${year}">${year}</option>`).join('');
+        }
+
+        // 根据选择的年份获取并填充省份
+        async function loadProvinces() {
+            const selectedYear = document.getElementById('year').value;
+            const response = await fetch(`/get-provinces/${selectedYear}`);
+            const provinces = await response.json();
+            const provinceSelect = document.getElementById('province');
+            
+            provinceSelect.innerHTML = provinces.map(province => `<option value="${province}">${province}</option>`).join('');
+        }
+
+        // 当用户点击查询按钮，加载对应年份和省份的HTML文件到左侧A部分的iframe中并更新标题
+        function loadProvinceData() {
+                const province = document.getElementById('province').value;
+                const year = document.getElementById('year').value;
+                const iframe = document.getElementById('provinceData');
+                iframe.src = `/year/${encodeURIComponent(year)}/${encodeURIComponent(province)}.html`;
+                
+                const titleDiv = document.getElementById('MAP_title');
+                titleDiv.innerHTML = `${year}${province}五级行政区划`;
+        }
+
+        // 初始加载年份，并设置事件监听器
+        loadYears().then(() => {
+            loadProvinces();  // 初始加载省份
+        });
+        //添加拖动条
+        let isResizing = false;
+        // 当拖动开始时，动态地创建这个覆盖层，并在拖动结束时移除它
+        document.getElementById('resizer').addEventListener('mousedown', (event) => {
+            isResizing = true;
+            
+            // 添加iframe覆盖层
+            const overlay = document.createElement('div');
+            overlay.id = 'frameOverlay';
+            document.body.appendChild(overlay);
+            
+            // 为新创建的覆盖层添加mouseup事件监听器
+            overlay.addEventListener('mouseup', function handleMouseUp() {
+                isResizing = false;
+                overlay.removeEventListener('mouseup', handleMouseUp); // 移除这个特定的mouseup监听器
+                if (overlay) {
+                    overlay.parentElement.removeChild(overlay);
+                }
+                document.removeEventListener('mousemove', handleMouseMove);
+            });
+
+            // 监听文档上的鼠标释放事件，确保释放鼠标按钮时停止拖动
+            document.addEventListener('mouseup', function stopResizing() {
+                isResizing = false;
+                document.removeEventListener('mousemove', handleMouseMove);
+                document.removeEventListener('mouseup', stopResizing);
+                if (overlay) {
+                    overlay.parentElement.removeChild(overlay);
+                }
+            });
+
+            // 监听鼠标移动事件
+            document.addEventListener('mousemove', handleMouseMove);
+            event.preventDefault();
+        });
+
+
+        overlay.addEventListener('mouseup', () => {
+            isResizing = false;
+            // 移除iframe覆盖层
+            const overlay = document.getElementById('frameOverlay');
+            if (overlay) {
+                overlay.parentElement.removeChild(overlay);
+            }
+            document.removeEventListener('mousemove', handleMouseMove);
+        });
+
+
+        document.addEventListener('mouseleave', () => {
+            isResizing = false;
+            document.removeEventListener('mousemove', handleMouseMove);
+        });
+
+        function handleMouseMove(event) {
+            // 判断拖动状态和鼠标左键是否按下
+            if (!isResizing || (event.buttons !== 1)) {
+                isResizing = false;
+                document.removeEventListener('mousemove', handleMouseMove);
+                
+                // 移除iframe覆盖层
+                const overlay = document.getElementById('frameOverlay');
+                if (overlay) {
+                    overlay.parentElement.removeChild(overlay);
+                }
+                return;
+            }
+
+            const leftPanel = document.getElementById('provinceData');
+            const container = document.querySelector("div[style='height: 90%; display: flex; width: 100%;']");
+            const resizerWidth = 5;  // 拖动条的宽度
+            let leftWidth = event.clientX - container.getBoundingClientRect().left;
+
+            // 约束leftWidth的值
+            leftWidth = Math.max(leftWidth, 100); // 最小宽度为100px
+            leftWidth = Math.min(leftWidth, container.offsetWidth - resizerWidth - 100); // 考虑到拖动条和右边面板的最小宽度
+
+            leftPanel.style.flex = `0 0 ${leftWidth}px`;
+        }
+        //添加JavaScript代码来检查是否存在矢量数据
     </script>
-</body>
 
+</body>
 </html>
