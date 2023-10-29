@@ -3,6 +3,7 @@ const axios = require('axios');
 const express = require('express');
 const app = express();
 
+
 //设置一个数据库属性
 const pgp = require('pg-promise')();
 const dbConfig = {
@@ -60,6 +61,18 @@ app.post('/place', async (req, res) => {
     } else {
         res.send(`Unable to find location for ${placeName}`);
     }
+});
+
+//添加一个禁止用户下载次数
+
+const downloadCounts = {};  // 用于跟踪每个IP地址的下载次数
+const downloadCounts_number=1 // 下载次数
+app.use((req, res, next) => {
+    const ip = req.ip;
+    if (!downloadCounts[ip]) {
+        downloadCounts[ip] = 0;
+    }
+    next();
 });
 
 //在app.js的底部，添加以下代码来创建一个错误处理中间件：
@@ -201,6 +214,11 @@ app.get('/getGsonFile', (req, res, next) => {
 const { exec } = require('child_process');
 
 app.get('/downloadVector/:code', async (req, res, next) => {
+    const ip = req.ip;
+    if (downloadCounts[ip] >= downloadCounts_number) {
+        return res.status(429).send('该网站非盈利网站，流量有限，请勿大量下载数据');
+    }
+
     const dataCode = req.params.code;
     const format = req.query.format;
 
@@ -216,12 +234,16 @@ app.get('/downloadVector/:code', async (req, res, next) => {
                 res.download(vectorFilePath);
             } else {
                 res.status(400).send('Invalid format');
+                
             }
         } else {
             const error = new Error('File not found');
             return next(error);
         }
     }
+    res.on('finish', () => {
+        downloadCounts[ip]++;
+    });
 });
 
 //转换gson数据为shp
