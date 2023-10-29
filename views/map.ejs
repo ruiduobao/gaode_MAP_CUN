@@ -11,6 +11,7 @@
     <div id="MAP_title" style="background-color: lightblue; color: blue;height: 5%; text-align: center; font-weight: bold; font-size: 1.5em;">
         五级行政区划查询
     </div>
+
     <div style="height: 90%; display: flex; width: 100%;">
         <!-- 左边的A部分 -->
         <iframe id="provinceData" style="border: 1px solid lightblue; flex: 7;"></iframe>
@@ -19,40 +20,50 @@
         <!-- 右边的B部分 -->
         <div id="SELECT_AND_MAP" style="flex: 3; display: flex; flex-direction: column;">
             <!-- 地图图层 -->
-            <div id="mapContainer" style="flex: 1;"></div>
-            <!-- 右下角 -->
-            <div id="SELECT_province" style="height: 20%; display: flex; align-items: center;">
-                <!-- 年份下拉框 -->
-                <label>时间:</label>
-                <select id="year" onchange="loadProvinces()">
-                    <!-- 年份选项将通过JavaScript动态生成 -->
-                </select>
-            
-                <!-- 省份下拉框 -->
-                <label>省份:</label>
-                <select id="province">
-                    <!-- 省份选项将根据所选年份通过JavaScript动态生成 -->
-                </select>
-                <!-- 查询按钮 -->
-                <button onclick="loadProvinceData()">查询</button>
-                <!-- 下载按钮 -->
-                <a href="#" id="downloadVectorBtn" style="display: none;">下载矢量数据</a>
-                <select id="formatSelect" style="display: none;">
-                    <option value="shp">SHP</option>
-                    <option value="gson">GSON</option>
-                    <option value="svg">SVG</option>
-                </select>
-                <!-- 地图图层切换的下拉框 -->
-                <div style="margin-left: auto;">
+            <div id="mapContainer" style="flex: 1; position: relative; z-index: 1000;">
+                <!-- 地图图层切换的下拉框，悬浮在左下角 -->
+                <div style="position: absolute; bottom: 10px; right: 10px; z-index: 1000;">
                     <label for="mapLayer">底图:</label>
                     <select id="mapLayer" onchange="switchMapLayer()">
                         <option value="satellite" selected>遥感卫星</option>
-                        <option value="basic">基础地图</option>
+                        <option value="satellite_road">卫星和路网</option>
+                        <option value="basic">标准图层</option>
                     </select>
+                </div>                
+            </div>
+            <!-- 右下角 -->
+            <div id="SELECT_province" style="height: 20%; display: flex; flex-direction: column;">
+                <div id="download_info_DIV">
+                    <!-- 年份下拉框 -->
+                    <label>时间:</label>
+                    <select id="year" onchange="loadProvinces()">
+                        <!-- 年份选项将通过JavaScript动态生成 -->
+                    </select>
+                    <!-- 省份下拉框 -->
+                    <label>省份:</label>
+                    <select id="province">
+                        <!-- 省份选项将根据所选年份通过JavaScript动态生成 -->
+                    </select>
+                    <!-- 查询按钮 -->
+                    <button onclick="loadProvinceData()">查询</button>
+                </div>
+                <div id="downloadDIV" style="display: none; align-items: center;">
+                    <div id="downloadDIV_txt" >该区域查询到相关矢量，请选择下载格式</div>
+                    
+                    <ul id="formatSelect" style="display: none;" >
+                        <li data-value="shp">SHP</li>
+                        <li data-value="gson">GSON</li>
+                        <li data-value="svg">SVG</li>
+                    </ul>
+                </div>
+                <div id="downloadVectorBtn_DIV" style="display: none; align-items: center;">
+                    <button href="#" id="downloadVectorBtn">下载</button>
                 </div>
             </div>            
         </div>
     </div>
+    
+    
     <!-- 密码输入框，输入密码后才能下载数据-->
     <div id="passwordModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.6);  align-items: center; justify-content: center;">
         <div style="display: flex; background-color: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); max-width: 80%;">
@@ -75,6 +86,25 @@
     <script>
         //设置dataCode为全局变量
         let dataCode;
+
+        // 在页面加载时为每个下载格式li元素添加点击事件监听器
+        window.onload = function() {
+            const formatItems = document.querySelectorAll("#formatSelect li");
+            formatItems.forEach(item => {
+                item.addEventListener('click', function() {
+                    // 移除其他li的selected类
+                    formatItems.forEach(i => i.classList.remove('selected'));
+                    // 为所选的li添加selected类
+                    item.classList.add('selected');
+                });
+            });
+            // 默认选中SHP
+            const defaultSelected = document.querySelector("#formatSelect li[data-value='shp']");
+            if (defaultSelected) {
+                defaultSelected.classList.add('selected');
+            }
+        }
+
         //添加JavaScript来监听下载链接的点击事件
         document.getElementById('downloadVectorBtn').addEventListener('click', function(e) {
         e.preventDefault(); // 阻止默认的下载行为
@@ -93,8 +123,14 @@
         //检查密码
         function checkPassword() {
             const input = document.getElementById('passwordInput');
-            const formatSelect = document.getElementById('formatSelect');
-            const selectedFormat = formatSelect.value;
+
+            const selectedFormatItem = document.querySelector("#formatSelect li.selected");
+            // 如果没有选中的格式，返回或给出警告
+            if (!selectedFormatItem) {
+                alert("请选择一个格式");
+                return;
+            }
+            const selectedFormat = selectedFormatItem.getAttribute('data-value');
             
             if (input.value === '4444') {
                 hidePasswordModal();
@@ -105,16 +141,19 @@
                 alert('密码错误。关注公众号"遥感之家"回复密码');
             }
         }
-        
-        // 定义两个地图层
+    
+
+        // 定义地图层
         let basicLayer = new AMap.TileLayer();
         let satelliteLayer = new AMap.TileLayer.Satellite();
+        let roadNetLayer = new AMap.TileLayer.RoadNet();
+        let satelliteAndRoadNetLayer = [new AMap.TileLayer.Satellite(), new AMap.TileLayer.RoadNet()];
 
         // 初始化地图
         const map = new AMap.Map('mapContainer', {
             zoom: 15,
             center: [<%= longitude %>, <%= latitude %>],
-            layers: [satelliteLayer]  // 默认显示基础地图层
+            layers: [satelliteLayer]  // 默认显示遥感图层
         });
 
         function switchMapLayer() {
@@ -123,8 +162,10 @@
                 switchToSatelliteMap();
             } else if (selectedLayer === 'basic') {
                 switchToBasicMap();
-            }
-        }
+            } else if (selectedLayer === 'satellite_road') {
+                switchToSatelliteAndRoadNetMap();            
+        }}
+            
 
         function switchToSatelliteMap() {
             map.setLayers([satelliteLayer]);
@@ -132,6 +173,9 @@
 
         function switchToBasicMap() {
             map.setLayers([basicLayer]);
+        }
+        function switchToSatelliteAndRoadNetMap() {
+            map.setLayers(satelliteAndRoadNetLayer);
         }
 
         // 监听iframe传来的消息并处理
@@ -212,9 +256,12 @@
         function checkAndShowDownloadButton(dataCode) {
             const btn = document.getElementById('downloadVectorBtn');
             const formatSelect = document.getElementById('formatSelect');
+            const downloadDIV_DIV = document.getElementById('downloadDIV');
+            const downloadDIV_DIV2 = document.getElementById('downloadVectorBtn_DIV');
             btn.style.display = 'block';
             formatSelect.style.display = 'block';
-            
+            downloadDIV_DIV.style.display='block'
+            downloadDIV_DIV2.style.display='block'
             // btn.onclick = function() {
             //     const selectedFormat = formatSelect.value;
             //     window.location.href = `/downloadVector/${dataCode}?format=${selectedFormat}`;

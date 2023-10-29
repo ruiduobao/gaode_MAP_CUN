@@ -103,3 +103,32 @@ width: 65px; /* 这只是一个初始宽度，根据实际情况调整 */
 #province {
     width: 130px; /* 这是#year的两倍 */
 }
+
+#formatSelect li {
+    display: inline-block; /* 添加这行使li元素水平排列 */
+    cursor: pointer;
+    padding: 5px;
+    border: 1px solid transparent;
+    transition: background-color 0.2s;
+    list-style-type: none;
+    width: calc(18% - 10px); /* 减去左右的padding */
+    box-sizing: border-box;
+}
+
+#formatSelect li:hover {
+    background-color: #e0e0e0;
+}
+
+#formatSelect li.selected {
+    background-color: blue;
+    color: white;
+}
+
+#downloadVectorBtn_DIV {
+    padding-left: 40px;
+}
+
+#downloadDIV_txt {
+    font-style: italic;
+    font-weight: bold;
+}
