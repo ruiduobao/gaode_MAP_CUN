@@ -66,7 +66,7 @@ app.post('/place', async (req, res) => {
 //添加一个禁止用户下载次数
 
 const downloadCounts = {};  // 用于跟踪每个IP地址的下载次数
-const downloadCounts_number=1 // 下载次数
+const downloadCounts_number=20 // 下载次数
 app.use((req, res, next) => {
     const ip = req.ip;
     if (!downloadCounts[ip]) {
@@ -202,14 +202,28 @@ app.get('/getGsonFile', (req, res, next) => {
     }
 });
 
+//密码验证
+// // 使用body-parser解析JSON请求体
+// app.use(bodyParser.json());
+// // 密码验证路由
+// app.post('/verifyPassword', (req, res) => {
+//     const clientPassword = req.body.password;
+//     const dataCode = req.body.dataCode;
+//     const format = req.body.format;
+//     const correctPassword = '4444';
+
+//     if (clientPassword === correctPassword) {
+//         const downloadLink = `/downloadVector/${dataCode}?format=${format}`;
+//         res.json({ success: true, downloadLink: downloadLink });
+//     } else {
+//         res.json({ success: false });
+//     }
+// });
+
 
 
 // 在app.js中添加新的路由来提供矢量文件的下载
 //下载的路由
-
-// const archiver = require('archiver');
-// const shp = require('shapefile');
-// const tj = require('@tmcw/togeojson');
 
 const { exec } = require('child_process');
 
@@ -218,7 +232,6 @@ app.get('/downloadVector/:code', async (req, res, next) => {
     if (downloadCounts[ip] >= downloadCounts_number) {
         return res.status(429).send('该网站非盈利网站，流量有限，请勿大量下载数据');
     }
-
     const dataCode = req.params.code;
     const format = req.query.format;
 

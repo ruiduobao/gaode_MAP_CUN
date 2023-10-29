@@ -73,37 +73,39 @@
     
 
     <script>
+        //设置dataCode为全局变量
+        let dataCode;
         //添加JavaScript来监听下载链接的点击事件
         document.getElementById('downloadVectorBtn').addEventListener('click', function(e) {
         e.preventDefault(); // 阻止默认的下载行为
-        // showPasswordModal(); // 显示模态对话框
+        showPasswordModal(); // 显示模态对话框
         });
 
         function showPasswordModal() {
             const modal = document.getElementById('passwordModal');
-            // modal.style.display = 'flex';
-            modal.style.display = 'none';
+            modal.style.display = 'flex';
         }
 
         function hidePasswordModal() {
             const modal = document.getElementById('passwordModal');
             modal.style.display = 'none';
         }
-
         //检查密码
         function checkPassword() {
             const input = document.getElementById('passwordInput');
+            const formatSelect = document.getElementById('formatSelect');
+            const selectedFormat = formatSelect.value;
+            
             if (input.value === '4444') {
                 hidePasswordModal();
-                // 此处的代码会实际开始下载
-                const downloadLink = document.getElementById('downloadVectorBtn');
-                window.location.href = downloadLink.href;
+                // 使用全局变量dataCode构建下载链接
+                const downloadUrl = `/downloadVector/${dataCode}?format=${selectedFormat}`;
+                window.location.href = downloadUrl;
             } else {
                 alert('密码错误。关注公众号"遥感之家"回复密码');
             }
         }
-
-
+        
         // 定义两个地图层
         let basicLayer = new AMap.TileLayer();
         let satelliteLayer = new AMap.TileLayer.Satellite();
@@ -147,7 +149,7 @@
             }
             break;
         case 'updateMapByCode':
-            const dataCode = event.data.code;
+            dataCode = event.data.code;  //// 更新全局变量dataCode
             exportgsontoDIR(dataCode)
                 .then(() => {
                     console.log('Successfully completed exportgsontoDIR!'); // 打印 exportgsontoDIR 完成状态
@@ -213,10 +215,10 @@
             btn.style.display = 'block';
             formatSelect.style.display = 'block';
             
-            btn.onclick = function() {
-                const selectedFormat = formatSelect.value;
-                window.location.href = `/downloadVector/${dataCode}?format=${selectedFormat}`;
-            }
+            // btn.onclick = function() {
+            //     const selectedFormat = formatSelect.value;
+            //     window.location.href = `/downloadVector/${dataCode}?format=${selectedFormat}`;
+            // }
             
             console.log(btn.href);
             }
@@ -333,7 +335,8 @@
 
             leftPanel.style.flex = `0 0 ${leftWidth}px`;
         }
-        //添加JavaScript代码来检查是否存在矢量数据
+        
+
     </script>
 
 </body>
