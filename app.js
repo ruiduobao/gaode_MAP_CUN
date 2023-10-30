@@ -140,11 +140,27 @@ app.get('/getGeoAddress', async (req, res, next) => {
 
     if (location) {
         const [longitude, latitude] = location.split(',');
-        res.json({ latitude: latitude, longitude: longitude });
+        // 调用函数来创建并保存 GeoJSON 文件
+        try {
+            const filepath = await createAndSaveGeoJSON(placeName, longitude, latitude);
+            console.log('GeoJSON file created successfully at:', filepath);
+            // 构造文件 URL
+            const fileUrl = `/vectordata/${encodeURIComponent(placeName)}.gson`;  // 相对于服务器根目录的URL路径
+            // 返回成功消息和文件 URL
+            // 返回成功消息和文件 URL
+            const responseData = { status: 'success', message: 'Data exported successfully', filepath: fileUrl };
+            console.log('Response data:', responseData);  // 打印响应数据
+            console.log('hello，world0'); 
+            res.json(responseData);
+        } catch (err) {
+            console.error('Error writing GeoJSON file:', err);
+            res.status(500).json({ status: 'error', message: 'Internal Server Error', filepath: null });
+        }
     } else {
-        res.json({ error: `not find gson ${placeName}` });
+        res.status(404).json({ status: 'error', message: `Not found gson for ${placeName}`, filepath: null });
     }
 });
+
 //让gson符合右手法则的库
 // const turf = require('@turf/turf');
 // 从数据库中导出矢量文件到路径
@@ -213,40 +229,69 @@ app.get('/getGsonFile', (req, res, next) => {
 
 // 在app.js中添加新的路由来提供矢量文件的下载
 //下载的路由
-
 const { exec } = require('child_process');
-
-app.get('/downloadVector/:code', async (req, res, next) => {
+app.get('/downloadVector/:id', async (req, res, next) => {
     const ip = req.ip;
     if (downloadCounts[ip] >= downloadCounts_number) {
         return res.status(429).send('该网站非盈利网站，流量有限，请勿大量下载数据');
     }
-    const dataCode = req.params.code;
+    const id = req.params.id;
     const format = req.query.format;
 
-    if (format === 'shp') {
-        await CovertShpFromGson(dataCode, res);
-    } else if (format === 'svg') {  // 添加这个条件分支
-        await CovertSVGFromGson(dataCode, res);
-    } else {
-        const vectorFilePath = path.join(__dirname, 'public', 'vectordata', `${dataCode}.${format}`);
+    // 判断id是否为dataCode
+    const isDataCode = /\d/.test(id);  // 假设dataCode包含数字
 
-        if (fs.existsSync(vectorFilePath)) {
-            if (format === 'gson') {
+    if (isDataCode) {
+        if (format === 'shp') {
+            await CovertShpFromGson(id, res);
+        } else if (format === 'svg') {
+            await CovertSVGFromGson(id, res);
+        } else if (format === 'gson') {
+            const vectorFilePath = path.join(__dirname, 'public', 'vectordata', `${id}.gson`);
+            if (fs.existsSync(vectorFilePath)) {
                 res.download(vectorFilePath);
             } else {
-                res.status(400).send('Invalid format');
-                
+                const error = new Error('File not found');
+                return next(error);
             }
         } else {
-            const error = new Error('File not found');
-            return next(error);
+            res.status(400).send('Invalid format');
+        }
+    } else {  // 处理address情况
+        if (format === 'gson') {
+            // const encodedId = encodeURIComponent(id);
+            const encodedId = id;
+            const vectorFilePath = path.join(__dirname, 'public', 'vectordata', `${encodedId}.gson`);
+            console.log('CUN Vector File Path:', vectorFilePath);  // 添加此行来查看文件路径
+            if (fs.existsSync(vectorFilePath)) {
+                res.download(vectorFilePath);
+            } else {
+                const error = new Error('File not found JSON');
+                return next(error);
+            }
+        } 
+        if (format === 'shp') {
+            await CovertShpFromGson(id, res)
+        } 
+        else {
+                       // const encodedId = encodeURIComponent(id);
+                       const encodedId = id;
+                       const vectorFilePath = path.join(__dirname, 'public', 'vectordata', `${encodedId}.gson`);
+                       console.log('CUN Vector File Path:', vectorFilePath);  // 添加此行来查看文件路径
+                       if (fs.existsSync(vectorFilePath)) {
+                           res.download(vectorFilePath);
+                       } else {
+                           const error = new Error('File not found JSON');
+                           return next(error);
+                       }
         }
     }
+
     res.on('finish', () => {
         downloadCounts[ip]++;
     });
 });
+
 
 //转换gson数据为shp
 // const shpwrite = require('@mapbox/shp-write');
@@ -408,7 +453,7 @@ async function createAndSaveGeoJSON(placeName, longitude, latitude) {
         };
         
         // 构建文件路径
-        const filepath = path.join(__dirname, 'public', 'vectordata', `${placeName}.geojson`);
+        const filepath = path.join(__dirname, 'public', 'vectordata', `${placeName}.gson`);
         
         // 将 GeoJSON 对象写入文件
         fs.writeFile(filepath, JSON.stringify(geojson), (err) => {

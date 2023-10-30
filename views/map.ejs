@@ -53,7 +53,7 @@
                     <ul id="formatSelect" style="display: none;" >
                         <li data-value="shp">SHP</li>
                         <li data-value="gson">GSON</li>
-                        <li data-value="svg">SVG</li>
+                        <li id="SVGLI" data-value="svg">SVG</li>
                     </ul>
                 </div>
                 <div id="downloadVectorBtn_DIV" style="display: none; align-items: center;">
@@ -84,9 +84,9 @@
     
 
     <script>
-        //设置dataCode为全局变量
+        //设置dataCode和address为全局变量
         let dataCode;
-
+        let address;
         // 在页面加载时为每个下载格式li元素添加点击事件监听器
         window.onload = function() {
             const formatItems = document.querySelectorAll("#formatSelect li");
@@ -135,7 +135,11 @@
             if (input.value === '4444') {
                 hidePasswordModal();
                 // 使用全局变量dataCode构建下载链接
-                const downloadUrl = `/downloadVector/${dataCode}?format=${selectedFormat}`;
+                let id = dataCode || address;  // 从全局变量或其他地方获取dataCode和address
+                if (address) {
+                    id = encodeURIComponent(address);  // 对地址进行编码以确保URL正确
+                }
+                const downloadUrl = `/downloadVector/${id}?format=${selectedFormat}`;
                 window.location.href = downloadUrl;
             } else {
                 alert('密码错误。关注公众号"遥感之家"回复密码');
@@ -183,15 +187,16 @@
         console.log(event);
         switch(event.data.type) {
         case 'updateMapByAddress': 
-            const address = event.data.address;
+            address = event.data.address;  //// 更新全局变量address
             console.log(event.data.address);
-            const response = await fetch(`http://localhost:3000/getGeoAddress?address=${encodeURIComponent(address)}`);
-            const data = await response.json();
-
-            if (data && data.latitude && data.longitude) {
-                map.setCenter([data.longitude, data.latitude]);
-                // map.zoom=17;
-            }
+            Codegson(address)
+            .then(() => {
+                console.log('Successfully completed exportgsontoDIR FROM OAMP!'); // 打印 exportgsontoDIR 完成状态
+            })
+            .catch(error => {
+                console.log('exportgsontoDIR! failed'); // 打印 exportgsontoDIR 完成状态
+                console.error('Error in the sequence:', error);
+            });
             break;
         case 'updateMapByCode':
             dataCode = event.data.code;  //// 更新全局变量dataCode
@@ -214,6 +219,9 @@
                 .then(data => {
                     console.log('Data exported successfully:', data);
                     if(data.status === 'success') {
+                        //显示SVG
+                        const SVGLI_LI = document.getElementById('SVGLI');
+                        SVGLI_LI.style.display = 'inline-block';
                         checkAndShowDownloadButton(dataCode);
                         loadGeoJSONfromPath(data.filepath);  // 使用返回的路径来加载GeoJSON
                     }
@@ -223,8 +231,60 @@
                     throw error;
                 });
             }
+        
+        //将地理编码查询到的矢量进行显示和下载
+        function Codegson(address) {
+            return fetch(`/getGeoAddress?address=${address}`)
+                .then(response => response.json())
+                .then(data => {
+                    console.log('GEOCODE TO GSON successfully:', data);
+                    if(data.status === 'success') {
+                        checkAndShowDownloadButton(address);
+                        //不显示村级下载svg数据
+                        const SVGLI_LI = document.getElementById('SVGLI');
+                        SVGLI_LI.style.display = 'none';
+                        loadGeoPointJSONfromPath(data.filepath) // 使用返回的路径来加载村级点GeoJSON
+                    }
+                })
+                .catch(error => {
+                    console.error('GEOCODE TO GSON error', error);
+                    throw error;
+                });
+        }
 
-        //高德显示矢量
+
+         
+        // 高德显示点矢量
+        function loadGeoPointJSONfromPath(filepath) {
+                    map.clearMap();  // 清除地图上的所有覆盖物
+                    fetch(filepath)
+                        .then(response => response.json())
+                        .then(geojsonData => {
+                            const geojson = new AMap.GeoJSON({
+                                geoJSON: geojsonData,
+                                getMarker: function(geojson, lnglats) {
+                                    // 创建一个红色的标记
+                                    return new AMap.Marker({
+                                        position: lnglats,
+                                        icon: new AMap.Icon({
+                                            size: new AMap.Size(40, 50),  // 图标尺寸
+                                            image: "https://webapi.amap.com/theme/v1.3/markers/n/mark_r.png"  // 红色标记的图标URL
+                                        })
+                                    });
+                                }
+                            });
+                            geojson.setMap(map);
+                            
+                            // 根据GeoJSON覆盖物自动调整地图视野
+                            map.setFitView();
+
+                        })
+                        .catch(error => {
+                            console.error('Error loading GeoJSON data to the map:', error);
+                        });
+                }
+
+        //高德显示面矢量
         function loadGeoJSONfromPath(filepath) {
             map.clearMap();
             fetch(filepath)
@@ -252,6 +312,7 @@
                 });
         }
 
+     
 
         //是否展示下载按钮函数
         function checkAndShowDownloadButton(dataCode) {
