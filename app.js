@@ -58,6 +58,15 @@ app.post('/place', async (req, res) => {
     if (location) {
         const [longitude, latitude] = location.split(',');
         res.render('map', { latitude: latitude, longitude: longitude });
+        // 调用函数来创建并保存 GeoJSON 文件
+        try {
+            const filepath = await createAndSaveGeoJSON(placeName, longitude, latitude);
+            console.log('GeoJSON file created successfully at:', filepath);
+        } catch (err) {
+            console.error('Error writing GeoJSON file:', err);
+            // 也可以选择通过 next(err) 将错误传递给错误处理中间件
+        }
+
     } else {
         res.send(`Unable to find location for ${placeName}`);
     }
@@ -380,3 +389,34 @@ function clearShpFolder() {
 // 设置一个每小时执行一次的定时器 setInterval(clearShpFolder, 1000 * 60 * 60);的意思是每隔1000毫秒60秒60分
 setInterval(clearShpFolder, 1000 * 60 * 60);
 
+// 定义一个函数来创建并保存地理编码获取到的经纬度的GeoJSON文件 
+async function createAndSaveGeoJSON(placeName, longitude, latitude) {
+    return new Promise((resolve, reject) => {
+        // 创建 GeoJSON 对象
+        const geojson = {
+            type: "FeatureCollection",
+            features: [{
+                type: "Feature",
+                geometry: {
+                    type: "Point",
+                    coordinates: [parseFloat(longitude), parseFloat(latitude)]
+                },
+                properties: {
+                    name: placeName
+                }
+            }]
+        };
+        
+        // 构建文件路径
+        const filepath = path.join(__dirname, 'public', 'vectordata', `${placeName}.geojson`);
+        
+        // 将 GeoJSON 对象写入文件
+        fs.writeFile(filepath, JSON.stringify(geojson), (err) => {
+            if (err) {
+                reject(err);  // 如果发生错误，拒绝 Promise
+            } else {
+                resolve(filepath);  // 如果成功，解析 Promise 并返回文件路径
+            }
+        });
+    });
+}
