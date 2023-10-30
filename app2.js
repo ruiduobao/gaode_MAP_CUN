@@ -194,10 +194,6 @@ app.get('/getGsonFile', (req, res, next) => {
 // 在app.js中添加新的路由来提供矢量文件的下载
 //下载的路由
 
-// const archiver = require('archiver');
-// const shp = require('shapefile');
-// const tj = require('@tmcw/togeojson');
-
 const { exec } = require('child_process');
 
 app.get('/downloadVector/:code', async (req, res, next) => {

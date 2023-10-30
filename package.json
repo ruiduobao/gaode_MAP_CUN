@@ -21,6 +21,7 @@
     "geojson": "^0.5.0",
     "geojson-extent": "^0.3.2",
     "geojson2svg": "^2.0.1",
+    "glob": "^10.3.10",
     "pg": "^8.11.3",
     "pg-promise": "^11.5.4"
   },

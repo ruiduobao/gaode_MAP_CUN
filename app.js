@@ -202,26 +202,6 @@ app.get('/getGsonFile', (req, res, next) => {
     }
 });
 
-//密码验证
-// // 使用body-parser解析JSON请求体
-// app.use(bodyParser.json());
-// // 密码验证路由
-// app.post('/verifyPassword', (req, res) => {
-//     const clientPassword = req.body.password;
-//     const dataCode = req.body.dataCode;
-//     const format = req.body.format;
-//     const correctPassword = '4444';
-
-//     if (clientPassword === correctPassword) {
-//         const downloadLink = `/downloadVector/${dataCode}?format=${format}`;
-//         res.json({ success: true, downloadLink: downloadLink });
-//     } else {
-//         res.json({ success: false });
-//     }
-// });
-
-
-
 // 在app.js中添加新的路由来提供矢量文件的下载
 //下载的路由
 

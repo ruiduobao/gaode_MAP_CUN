@@ -190,6 +190,7 @@
 
             if (data && data.latitude && data.longitude) {
                 map.setCenter([data.longitude, data.latitude]);
+                // map.zoom=17;
             }
             break;
         case 'updateMapByCode':
@@ -262,10 +263,6 @@
             formatSelect.style.display = 'block';
             downloadDIV_DIV.style.display='block'
             downloadDIV_DIV2.style.display='block'
-            // btn.onclick = function() {
-            //     const selectedFormat = formatSelect.value;
-            //     window.location.href = `/downloadVector/${dataCode}?format=${selectedFormat}`;
-            // }
             
             console.log(btn.href);
             }
