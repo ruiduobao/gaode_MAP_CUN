@@ -13,7 +13,7 @@ info_dict = {
 }
 
 # 从CSV文件读取数据
-PATH = r"./data_example/2.生成的数据位一到五级(含编码).csv"
+PATH = r"E:\个人\博客\锐多宝矢量\data\网站\gaode_MAP_CUN\处理脚本\data_example\2.生成的数据位一到五级(含编码).csv"
 df = pd.read_csv(PATH)
 
 # 按照省、市、县、乡的层次结构对数据进行排序
@@ -24,22 +24,17 @@ provinces = df['省'].unique()
 
 for province in tqdm(provinces):
     # 创建Markdown文档
-    OUT_PATH = fr"./data_example/生成的markdown文件/{province}.md"
+    OUT_PATH = fr"E:\个人\博客\锐多宝矢量\data\网站\gaode_MAP_CUN\处理脚本\data_example\生成的markdown文件2/{province}.md"
     
     with open(OUT_PATH, "w", encoding="utf-8") as file:
         
-        # file.write("---\n")
-        # file.write("markmap:\n")
-        # file.write("  initialExpandLevel: 1\n")
-        # file.write("---\n\n")
-        
-        province_code = str(df[df['省'] == province].iloc[0]['编码'])[:6]
+        province_code = str(df[df['省'] == province].iloc[0]['编码'])[:2] + "0000"
         file.write(f"# [{province}]({province_code})\n")
         
         province_data = df[df['省'] == province]
 
         for city, city_data in province_data.groupby('市'):
-            city_code = str(city_data.iloc[0]['编码'])[:6]
+            city_code = str(city_data.iloc[0]['编码'])[:4] + "00"
             file.write(f"## [{city}]({city_code})\n")
             for county, county_data in city_data.groupby('县'):
                 county_code = str(county_data.iloc[0]['编码'])[:6]

@@ -161,57 +161,84 @@ app.get('/getGeoAddress', async (req, res, next) => {
     }
 });
 
-//让gson符合右手法则的库
-// const turf = require('@turf/turf');
+
 // 从数据库中导出矢量文件到路径
-app.get('/getGsonDB', async (req, res, next) => {
+app.get('/getGsonDB', async (req, res) => {
     const dataCode = req.query.code;
-    
+
+    if (!dataCode) {
+        return res.status(400).send('dataCode is required');
+    }
+
     try {
-        // 选择几何和属性信息
-        const results = await db.any('SELECT ST_AsGeoJSON(geom) as geojson_geom, * FROM xian_vector."CHN_xian" WHERE code = $1', [dataCode]);
-        
-        if (results && results.length > 0) {
-            const features = results.map(result => {
-                // 将几何信息转换为GeoJSON对象
-                const geojsonGeom = JSON.parse(result.geojson_geom);
-                
-                // 删除geojson_geom字段，剩下的就是属性信息
-                delete result.geojson_geom;
-
-                // 创建一个完整的GeoJSON Feature对象
-                return {
-                    type: "Feature",
-                    geometry: geojsonGeom,
-                    properties: result // 将属性信息添加到Feature对象中
-                };
-            });
-
-            // 创建一个完整的GeoJSON FeatureCollection对象
-            const geojsonFeatureCollection = {
-                type: "FeatureCollection",
-                features: features
-            };
-            // 删除 geom 属性
-            geojsonFeatureCollection.features.forEach(feature => {
-                delete feature.properties.geom;
-            });
-            // 保存GeoJSON FeatureCollection到文件
-            const gsonFilePath = path.join(__dirname, 'public', 'vectordata', `${dataCode}.gson`);
-            console.log(`vector code: ${dataCode} export to DIR.`);
-            fs.writeFileSync(gsonFilePath, JSON.stringify(geojsonFeatureCollection));
-            //确保你返回的是文件的URL而不是其在服务器上的文件路径
-            const gsonFileUrl = `/vectordata/${dataCode}.gson`;
-            res.json({ status: 'success', message: 'Data exported successfully', filepath: gsonFileUrl });
-
-        } else {
-            res.status(404).send('Data not found');
+        // 6位数字且后4位为0000
+        if (/^\d{2}0000$/.test(dataCode)) {
+            const sql = 'SELECT ST_AsGeoJSON(geom) as geojson_geom, * FROM "SHENG"."CHN_sheng_2023" WHERE first_gid = $1';
+            const results = await db.any(sql, [dataCode]);
+            return sendResults(res, dataCode, results);
+        }
+        // 6位数字且后2位为00
+        else if (/^\d{4}00$/.test(dataCode)) {
+            const results = await queryLatestYearData('SHI', 'CHN_shi', dataCode);
+            return sendResults(res, dataCode, results);
+        }
+        // 6位数字且后两位不为00
+        else if (/^\d{6}$/.test(dataCode) && !/00$/.test(dataCode)) {
+            const results = await queryLatestYearData('XIAN', 'CHN_xian', dataCode);
+            return sendResults(res, dataCode, results);
+        }
+        // 12位数字
+        else if (/^\d{12}$/.test(dataCode)) {
+            const sql = 'SELECT ST_AsGeoJSON(geom) as geojson_geom, * FROM "XIANG"."CHN_xiang_2020" WHERE code = $1';
+            const results = await db.any(sql, [dataCode]);
+            return sendResults(res, dataCode, results);
+        }
+        else {
+            return res.status(400).send('Invalid dataCode format');
         }
     } catch (err) {
         console.error(err);
         res.status(500).send('Internal Server Error');
     }
 });
+
+async function queryLatestYearData(schema, baseTableName, dataCode) {
+    const years = Array.from({ length: 11 }, (_, i) => 2023 - i);
+    for (let year of years) {
+        const tableName = `${baseTableName}_${year}`;
+        const sql = `SELECT ST_AsGeoJSON(geom) as geojson_geom, * FROM "${schema}"."${tableName}" WHERE code = $1`;
+        const results = await db.any(sql, [dataCode]);
+        if (results.length > 0) {
+            return results;
+        }
+    }
+    return [];
+}
+
+function sendResults(res, dataCode, results) {
+    if (results.length > 0) {
+        const geojsonFeatureCollection = {
+            type: "FeatureCollection",
+            features: results.map(result => {
+                const geojsonGeom = JSON.parse(result.geojson_geom);
+                delete result.geojson_geom;
+                delete result.geom;
+                return {
+                    type: "Feature",
+                    geometry: geojsonGeom,
+                    properties: result
+                };
+            })
+        };
+        const gsonFilePath = path.join(__dirname, 'public', 'vectordata', `${dataCode}.gson`);
+        fs.writeFileSync(gsonFilePath, JSON.stringify(geojsonFeatureCollection));
+        const gsonFileUrl = `/vectordata/${dataCode}.gson`;
+        res.json({ status: 'success', message: 'Data exported successfully', filepath: gsonFileUrl });
+    } else {
+        res.status(404).send('Data not found');
+    }
+}
+
 
 
 //获取矢量文件路径
