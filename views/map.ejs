@@ -204,6 +204,7 @@
         switch(event.data.type) {
         case 'updateMapByAddress': 
             address = event.data.address;  //// 更新全局变量address
+            dataCode = null;  // 清除dataCode的值
             console.log(event.data.address);
             Codegson(address)
             .then(() => {
@@ -216,6 +217,7 @@
             break;
         case 'updateMapByCode':
             dataCode = event.data.code;  //// 更新全局变量dataCode
+            address = null;  // 清除address的值
             exportgsontoDIR(dataCode)
                 .then(() => {
                     console.log('Successfully completed exportgsontoDIR!'); // 打印 exportgsontoDIR 完成状态
