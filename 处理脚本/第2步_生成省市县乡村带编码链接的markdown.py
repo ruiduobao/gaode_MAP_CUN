@@ -13,7 +13,8 @@ info_dict = {
 }
 
 # 从CSV文件读取数据
-PATH = r"E:\个人\博客\锐多宝矢量\data\网站\gaode_MAP_CUN\处理脚本\data_example\2.生成的数据位一到五级(含编码).csv"
+PATH = r"E:\个人\博客\锐多宝矢量\data\网站\gaode_MAP_CUN\处理脚本\data\修改后的csv文件\2.生成的数据位一到五级(含编码)2017.csv"
+
 df = pd.read_csv(PATH)
 
 # 按照省、市、县、乡的层次结构对数据进行排序
@@ -24,7 +25,7 @@ provinces = df['省'].unique()
 
 for province in tqdm(provinces):
     # 创建Markdown文档
-    OUT_PATH = fr"E:\个人\博客\锐多宝矢量\data\网站\gaode_MAP_CUN\处理脚本\data_example\生成的markdown文件2/{province}.md"
+    OUT_PATH = fr"E:\个人\博客\锐多宝矢量\data\网站\gaode_MAP_CUN\处理脚本\data\生成的markdown文件\2017年/{province}.md"
     
     with open(OUT_PATH, "w", encoding="utf-8") as file:
         

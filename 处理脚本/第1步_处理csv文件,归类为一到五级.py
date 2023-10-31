@@ -4,8 +4,8 @@ import pandas as pd
 
 
 # 读取CSV文件
-input_file = r'E:\\个人\\博客\\锐多宝矢量\data\\参考\\参考行政区划代码\\china_area（2010-2023）\\area_code_2023\\area_code_2023.csv'  # 替换为您的输入文件路径
-output_file = r'E:\\个人\\博客\\锐多宝矢量\data\\参考\\参考行政区划代码\\china_area（2010-2023）\\area_code_2023\\area_code_2023_整理6.csv'  # 替换为您的输出文件路径
+input_file = r'E:\个人\博客\锐多宝矢量\data\网站\gaode_MAP_CUN\处理脚本\data\原始csv文件\\area_code_2010.csv'  # 替换为您的输入文件路径
+output_file = r'E:\个人\博客\锐多宝矢量\data\网站\gaode_MAP_CUN\处理脚本\data\修改后的csv文件\\2.生成的数据位一到五级(含编码)2010.csv'  # 替换为您的输出文件路径
 
 df = pd.read_csv(input_file)
 
@@ -50,7 +50,7 @@ for index, row in df.iterrows():
     prev_level = level
 
 # 创建输出的DataFrame
-output_df = pd.DataFrame(output_data, columns=['第一级名称', '第二级名称', '第三级名称', '第四级名称', '第五级名称', '编码', '其他信息'])
+output_df = pd.DataFrame(output_data, columns=['省', '市', '县', '乡', '村', '编码', '其他信息'])
 
 # 保存输出数据到CSV文件
 

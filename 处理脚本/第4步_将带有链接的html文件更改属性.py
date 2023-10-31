@@ -5,8 +5,8 @@ import re
 import os
 
 # 文件夹路径
-folder_path = r"E:\个人\博客\锐多宝矢量\data\网站\gaode_MAP_CUN\处理脚本\data_example\生成的html文件"
-
+folder_path = r"E:\个人\博客\锐多宝矢量\data\网站\gaode_MAP_CUN\处理脚本\data\生成的html文件\2017年"
+print("hello,world")
 # 获取文件夹中的所有文件
 for filename in os.listdir(folder_path):
     # 检查是否为.html文件
@@ -30,3 +30,4 @@ for filename in os.listdir(folder_path):
         # 将处理后的HTML内容写回文件
         with open(file_path, 'w', encoding='utf-8') as file:
             file.write(modified_html)
+        print("finish")
