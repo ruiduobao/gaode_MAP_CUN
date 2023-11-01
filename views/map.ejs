@@ -91,6 +91,10 @@
         //设置dataCode和address为全局变量
         let dataCode;
         let address;
+        //iframe为全局变量
+        let iframe
+        // 在这个函数的最开始声明Year和Province
+        let Year, Province; 
         // 在页面加载时为每个下载格式li元素添加点击事件监听器
         window.onload = function() {
             const formatItems = document.querySelectorAll("#formatSelect li");
@@ -200,6 +204,7 @@
             }
         // 监听iframe传来的消息并处理
         window.addEventListener('message', async (event) => {
+
         console.log(event);
         switch(event.data.type) {
         case 'updateMapByAddress': 
@@ -226,6 +231,68 @@
                     console.log('exportgsontoDIR! failed'); // 打印 exportgsontoDIR 完成状态
                     console.error('Error in the sequence:', error);
                 });
+            break;
+        //首页的消息接收
+        case 'updateMapByYearsheng':
+            Province=null
+            Year=null
+            Yearsheng = event.data.yearsheng;  //// 更新全局变量dataCode
+            //拆分Year和省份
+            const match = Yearsheng.match(/(\D+)(\d+年)/);
+            if (match) {
+                Province = match[1];
+                Year = match[2];
+                console.log('Province:', Province); // 输出: Province: 安徽省
+                console.log('Year:', Year);         // 输出: Year: 2010年
+                } else {
+                console.error('从首页输入字符串不符合预期格式');
+            }
+            //加载对应的year和省份的html到网页中
+            //清楚iframe的值
+            iframe == null
+            iframe = document.getElementById('provinceData');
+            iframe.src = `/year/${encodeURIComponent(Year)}/${encodeURIComponent(Province)}.html`;
+            const titleDiv = document.getElementById('MAP_title');
+            titleDiv.innerHTML = `${Year}${Province}五级行政区划`;
+            //加载对应省份的代码到地图中
+            const provinceCodes = {
+                '北京市': '110000',
+                '天津市': '120000',
+                '河北省': '130000',
+                '山西省': '140000',
+                '内蒙古自治区': '150000',
+                '辽宁省': '210000',
+                '吉林省': '220000',
+                '黑龙江省': '230000',
+                '上海市': '310000',
+                '江苏省': '320000',
+                '浙江省': '330000',
+                '安徽省': '340000',
+                '福建省': '350000',
+                '江西省': '360000',
+                '山东省': '370000',
+                '河南省': '410000',
+                '湖北省': '420000',
+                '湖南省': '430000',
+                '广东省': '440000',
+                '广西壮族自治区': '450000',
+                '海南省': '460000',
+                '重庆市': '500000',
+                '四川省': '510000',
+                '贵州省': '520000',
+                '云南省': '530000',
+                '西藏自治区': '540000',
+                '陕西省': '610000',
+                '甘肃省': '620000',
+                '青海省': '630000',
+                '宁夏回族自治区': '640000',
+                '新疆维吾尔自治区': '650000',
+                '香港特别行政区': '810000',
+                '澳门特别行政区': '820000',
+                '台湾省': '710000'
+                };
+            const SHENG_datacode = provinceCodes[Province] || '省份名字不正确';
+            exportgsontoDIR(SHENG_datacode)
             break;
             }
         });
@@ -270,8 +337,6 @@
                 });
         }
 
-
-         
         // 高德显示点矢量
         function loadGeoPointJSONfromPath(filepath) {
                     map.clearMap();  // 清除地图上的所有覆盖物
@@ -330,8 +395,6 @@
                 });
         }
 
-     
-
         //是否展示下载按钮函数
         function checkAndShowDownloadButton(dataCode) {
             const btn = document.getElementById('downloadVectorBtn');
@@ -369,7 +432,8 @@
         function loadProvinceData() {
                 const province = document.getElementById('province').value;
                 const year = document.getElementById('year').value;
-                const iframe = document.getElementById('provinceData');
+                iframe=null
+                iframe = document.getElementById('provinceData');
                 iframe.src = `/year/${encodeURIComponent(year)}/${encodeURIComponent(province)}.html`;
                 
                 const titleDiv = document.getElementById('MAP_title');
