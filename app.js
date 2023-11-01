@@ -27,51 +27,13 @@ app.get('/', (req, res) => {
 });
 //在app.js中设置public文件夹为静态文件夹
 app.use(express.static('public'));
+// //设置JavaScript的静态文件夹
+// app.use('/js', express.static('public/js'));
 
 const PORT = 3000;
 app.listen(PORT, () => {
     console.log(`Server is running on http://localhost:${PORT}`);
 });
-// app.post('/place', async (req, res) => {
-//     const placeName = req.body.placeName;
-//     // 检查place参数是否有效
-//     if (!placeName || placeName.trim() === '') {
-//         const error = new Error('Invalid place parameter.');
-//         return next(error);
-//     }
-
-//     const GAODE_API_KEY = 'b6ba147ffd1e49158d12f7cb16d0f381';
-//     const GAODE_GEOCODE_URL = `https://restapi.amap.com/v3/geocode/geo?address=${encodeURIComponent(placeName)}&key=${GAODE_API_KEY}`;
-
-//     let location = null; // 定义location变量在try块之前
-
-//     try {
-//         const response = await axios.get(GAODE_GEOCODE_URL);
-//         if (response.data && response.data.geocodes && response.data.geocodes.length > 0) {
-//             location = response.data.geocodes[0].location;
-//         } else {
-//             throw new Error('Unable to geocode the provided place.');
-//         }
-//     } catch (error) {
-//         return next(error); // 使用next()将错误传递给下一个中间件
-//     }
-    
-//     if (location) {
-//         const [longitude, latitude] = location.split(',');
-//         res.render('map', { latitude: latitude, longitude: longitude });
-//         // 调用函数来创建并保存 GeoJSON 文件
-//         try {
-//             const filepath = await createAndSaveGeoJSON(placeName, longitude, latitude);
-//             console.log('GeoJSON file created successfully at:', filepath);
-//         } catch (err) {
-//             console.error('Error writing GeoJSON file:', err);
-//             // 也可以选择通过 next(err) 将错误传递给错误处理中间件
-//         }
-
-//     } else {
-//         res.send(`Unable to find location for ${placeName}`);
-//     }
-// });
 
 //添加一个禁止用户下载次数
 
